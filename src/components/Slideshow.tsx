@@ -50,7 +50,8 @@ const Slideshow = () => {
   };
 
   return (
-    <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden my-6 mx-4 md:mx-8 lg:mx-12">
+    <div className="p-4 md:p-6 lg:p-8 m-4 md:m-6 lg:m-8">
+      <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-lg">
       {slides.map((slide, index) => (
         <div
           key={index}
@@ -96,6 +97,7 @@ const Slideshow = () => {
             onClick={() => setCurrentSlide(index)}
           />
         ))}
+      </div>
       </div>
     </div>
   );
