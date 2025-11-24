@@ -45,7 +45,7 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => onTabChange("lotteries")}
+              onClick={() => navigate("/lotteries")}
               className={activeTab === "lotteries" ? "text-primary" : ""}
             >
               <Trophy className="mr-2 h-4 w-4" />
@@ -103,7 +103,7 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
           <Button
             size="sm"
             variant={activeTab === "lotteries" ? "default" : "ghost"}
-            onClick={() => onTabChange("lotteries")}
+            onClick={() => navigate("/lotteries")}
           >
             Lotteries
           </Button>

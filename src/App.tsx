@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Lotteries from "./pages/Lotteries";
 import LotterySelection from "./pages/LotterySelection";
 import Results from "./pages/Results";
 import BookedTickets from "./pages/BookedTickets";
@@ -28,6 +29,7 @@ const App = () => (
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/lotteries" element={<Lotteries />} />
         <Route path="/lottery/:id" element={<LotterySelection />} />
         <Route path="/results" element={<Results />} />
         <Route path="/booked-tickets" element={<BookedTickets />} />
