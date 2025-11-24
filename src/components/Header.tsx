@@ -53,7 +53,7 @@ const Header = ({ activeTab, onTabChange }: HeaderProps) => {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => onTabChange("result")}
+              onClick={() => navigate("/results")}
               className={activeTab === "result" ? "text-primary" : ""}
             >
               <Award className="mr-2 h-4 w-4" />
