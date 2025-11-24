@@ -6,7 +6,7 @@ import { ArrowLeft, ShoppingCart, Info, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const LotterySelection = () => {
-  const { prizeType } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
@@ -20,7 +20,7 @@ const LotterySelection = () => {
     let prefix = "15-19";
     let startNum = 2548;
     
-    switch (prizeType) {
+    switch (id) {
       case "10-evening":
         prefix = "10-19";
         startNum = 1000;
@@ -43,7 +43,7 @@ const LotterySelection = () => {
       return `${prefix}/${num}`;
     });
     setNumbers(numberArray);
-  }, [prizeType]);
+  }, [id]);
 
   const generateDateOptions = () => {
     const dates = [];
@@ -165,7 +165,7 @@ const LotterySelection = () => {
   const countdown = { days: 0, hours: 3, minutes: 52, seconds: 9 };
 
   const getLotteryDetails = () => {
-    switch (prizeType) {
+    switch (id) {
       case "10-evening":
         return { name: "DL 10 EVENING", price: 10, time: "5:40 PM" };
       case "50-weekly":

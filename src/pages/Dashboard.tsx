@@ -112,7 +112,6 @@ const Dashboard = () => {
           </div>
         );
       case "result":
-        navigate("/results");
         return null;
       default:
         return (
