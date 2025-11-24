@@ -50,7 +50,7 @@ const Slideshow = () => {
   };
 
   return (
-    <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden">
+    <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden my-6 mx-4 md:mx-8 lg:mx-12">
       {slides.map((slide, index) => (
         <div
           key={index}
