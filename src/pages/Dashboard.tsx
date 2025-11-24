@@ -202,7 +202,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header activeTab={activeTab} onTabChange={setActiveTab} />
       
       <Slideshow />
       

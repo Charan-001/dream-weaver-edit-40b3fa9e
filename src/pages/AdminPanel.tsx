@@ -226,7 +226,7 @@ const AdminPanel = () => {
     await fetchResults();
   };
 
-  const handleUpdateLotteryStatus = async (lotteryId: string, newStatus: string) => {
+  const handleUpdateLotteryStatus = async (lotteryId: string, newStatus: "active" | "cancelled" | "completed" | "upcoming") => {
     const { error } = await supabase
       .from('lotteries')
       .update({ status: newStatus })
@@ -533,7 +533,7 @@ const AdminPanel = () => {
                           <TableCell>
                             <Select
                               value={lottery.status}
-                              onValueChange={(value: string) => handleUpdateLotteryStatus(lottery.id, value)}
+                              onValueChange={(value: "active" | "cancelled" | "completed" | "upcoming") => handleUpdateLotteryStatus(lottery.id, value)}
                             >
                               <SelectTrigger className="w-32">
                                 <SelectValue />
