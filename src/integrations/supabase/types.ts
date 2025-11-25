@@ -14,139 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      lotteries: {
-        Row: {
-          created_at: string | null
-          draw_date: string
-          first_prize: number
-          id: string
-          image_url: string | null
-          lottery_type: Database["public"]["Enums"]["lottery_type"]
-          name: string
-          second_prize: number | null
-          status: Database["public"]["Enums"]["lottery_status"]
-          third_prize: number | null
-          ticket_price: number
-          total_tickets: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          draw_date: string
-          first_prize: number
-          id?: string
-          image_url?: string | null
-          lottery_type?: Database["public"]["Enums"]["lottery_type"]
-          name: string
-          second_prize?: number | null
-          status?: Database["public"]["Enums"]["lottery_status"]
-          third_prize?: number | null
-          ticket_price: number
-          total_tickets?: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          draw_date?: string
-          first_prize?: number
-          id?: string
-          image_url?: string | null
-          lottery_type?: Database["public"]["Enums"]["lottery_type"]
-          name?: string
-          second_prize?: number | null
-          status?: Database["public"]["Enums"]["lottery_status"]
-          third_prize?: number | null
-          ticket_price?: number
-          total_tickets?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      lottery_results: {
-        Row: {
-          created_at: string | null
-          declared_at: string | null
-          first_prize_number: string
-          id: string
-          lottery_id: string
-          second_prize_number: string | null
-          third_prize_number: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          declared_at?: string | null
-          first_prize_number: string
-          id?: string
-          lottery_id: string
-          second_prize_number?: string | null
-          third_prize_number?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          declared_at?: string | null
-          first_prize_number?: string
-          id?: string
-          lottery_id?: string
-          second_prize_number?: string | null
-          third_prize_number?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lottery_results_lottery_id_fkey"
-            columns: ["lottery_id"]
-            isOneToOne: false
-            referencedRelation: "lotteries"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tickets: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_winner: boolean | null
-          lottery_id: string
-          prize_tier: string | null
-          purchase_date: string | null
-          ticket_number: string
-          user_email: string | null
-          user_name: string | null
-          user_phone: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_winner?: boolean | null
-          lottery_id: string
-          prize_tier?: string | null
-          purchase_date?: string | null
-          ticket_number: string
-          user_email?: string | null
-          user_name?: string | null
-          user_phone?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_winner?: boolean | null
-          lottery_id?: string
-          prize_tier?: string | null
-          purchase_date?: string | null
-          ticket_number?: string
-          user_email?: string | null
-          user_name?: string | null
-          user_phone?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tickets_lottery_id_fkey"
-            columns: ["lottery_id"]
-            isOneToOne: false
-            referencedRelation: "lotteries"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
@@ -155,8 +23,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      lottery_status: "upcoming" | "active" | "completed" | "cancelled"
-      lottery_type: "weekly" | "monthly" | "special" | "bumper"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -283,9 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      lottery_status: ["upcoming", "active", "completed", "cancelled"],
-      lottery_type: ["weekly", "monthly", "special", "bumper"],
-    },
+    Enums: {},
   },
 } as const
