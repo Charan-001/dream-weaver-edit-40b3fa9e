@@ -3,15 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import lotteryLogo from "@/assets/lottery-logo.png";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("userLoggedIn");
-    if (isLoggedIn) {
-      navigate("/dashboard");
-    }
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkAuth();
   }, [navigate]);
 
   return (

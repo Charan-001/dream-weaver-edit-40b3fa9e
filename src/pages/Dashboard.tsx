@@ -6,14 +6,17 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("home");
   const [lotteries, setLotteries] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
 
   useEffect(() => {
+    checkAuth();
     fetchLotteries();
     fetchResults();
 
@@ -36,6 +39,18 @@ const Dashboard = () => {
       supabase.removeChannel(resultsChannel);
     };
   }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to continue",
+        variant: "destructive",
+      });
+      navigate("/auth");
+    }
+  };
 
   const fetchLotteries = async () => {
     const { data, error } = await supabase

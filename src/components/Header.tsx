@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import lotteryLogo from "@/assets/lottery-logo.png";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   activeTab: string;
@@ -17,8 +18,8 @@ interface HeaderProps {
 const Header = ({ activeTab, onTabChange }: HeaderProps) => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("userLoggedIn");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/");
   };
 
