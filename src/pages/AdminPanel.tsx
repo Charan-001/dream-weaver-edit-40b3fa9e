@@ -41,12 +41,7 @@ const AdminPanel = () => {
   });
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("isAdmin");
-    if (!isAdmin) {
-      navigate("/auth");
-      return;
-    }
-    
+    checkAdmin();
     fetchAllData();
     
     const lotteriesChannel = supabase
@@ -58,7 +53,7 @@ const AdminPanel = () => {
 
     const ticketsChannel = supabase
       .channel('tickets-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'booked_tickets' }, () => {
         fetchTickets();
       })
       .subscribe();
@@ -77,6 +72,30 @@ const AdminPanel = () => {
     };
   }, [navigate]);
 
+  const checkAdmin = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!roleData) {
+      toast({
+        title: "Access Denied",
+        description: "Admin privileges required",
+        variant: "destructive",
+      });
+      navigate("/dashboard");
+    }
+  };
+
   const fetchAllData = async () => {
     await Promise.all([fetchLotteries(), fetchTickets(), fetchResults()]);
   };
@@ -94,8 +113,8 @@ const AdminPanel = () => {
 
   const fetchTickets = async () => {
     const { data, error } = await supabase
-      .from('tickets')
-      .select('*, lotteries(name)')
+      .from('booked_tickets')
+      .select('*, orders(lottery_name)')
       .order('created_at', { ascending: false })
       .limit(50);
     
@@ -107,17 +126,16 @@ const AdminPanel = () => {
   const fetchResults = async () => {
     const { data, error } = await supabase
       .from('lottery_results')
-      .select('*, lotteries(name, lottery_type)')
-      .order('declared_at', { ascending: false});
+      .select('*, lotteries(name, type)')
+      .order('created_at', { ascending: false});
     
     if (!error && data) {
       setResults(data);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("isLoggedIn");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast({
       title: "Logged out",
       description: "Admin logged out successfully",
@@ -139,13 +157,10 @@ const AdminPanel = () => {
       .from('lotteries')
       .insert([{
         name: newLottery.name,
-        lottery_type: newLottery.lottery_type,
+        type: newLottery.lottery_type,
         draw_date: new Date(newLottery.draw_date).toISOString(),
         ticket_price: parseFloat(newLottery.ticket_price),
-        first_prize: parseFloat(newLottery.first_prize),
-        second_prize: newLottery.second_prize ? parseFloat(newLottery.second_prize) : null,
-        third_prize: newLottery.third_prize ? parseFloat(newLottery.third_prize) : null,
-        total_tickets: parseInt(newLottery.total_tickets),
+        prize: parseFloat(newLottery.first_prize),
         status: newLottery.status
       }]);
 
@@ -188,13 +203,20 @@ const AdminPanel = () => {
       return;
     }
 
+    const winningNumbers = [resultData.first_prize_number];
+    if (resultData.second_prize_number) winningNumbers.push(resultData.second_prize_number);
+    if (resultData.third_prize_number) winningNumbers.push(resultData.third_prize_number);
+
+    const lottery = lotteries.find(l => l.id === resultData.lottery_id);
+    if (!lottery) return;
+
     const { error } = await supabase
       .from('lottery_results')
       .insert([{
         lottery_id: resultData.lottery_id,
-        first_prize_number: resultData.first_prize_number,
-        second_prize_number: resultData.second_prize_number || null,
-        third_prize_number: resultData.third_prize_number || null
+        winning_numbers: winningNumbers,
+        prize_amount: lottery.prize,
+        draw_date: lottery.draw_date
       }]);
 
     if (error) {
@@ -242,15 +264,14 @@ const AdminPanel = () => {
   };
 
   const stats = {
-    totalUsers: tickets.filter((t, i, self) => self.findIndex(ticket => ticket.user_email === t.user_email) === i).length,
+    totalUsers: tickets.filter((t, i, self) => self.findIndex(ticket => ticket.user_id === t.user_id) === i).length,
     totalTickets: tickets.length,
     totalRevenue: `₹${tickets.reduce((sum, t) => {
-      const lottery = lotteries.find(l => l.id === t.lottery_id);
-      return sum + (lottery?.ticket_price || 0);
+      return sum + (t.orders?.ticket_price || 0);
     }, 0).toLocaleString()}`,
     activeDraws: lotteries.filter(l => l.status === 'active' || l.status === 'upcoming').length,
     completedDraws: lotteries.filter(l => l.status === 'completed').length,
-    winningTickets: results.length * 3
+    winningTickets: results.reduce((sum, r) => sum + (r.winning_numbers?.length || 0), 0)
   };
 
   return (
@@ -383,9 +404,9 @@ const AdminPanel = () => {
                     <TableBody>
                       {tickets.slice(0, 10).map((ticket) => (
                         <TableRow key={ticket.id}>
-                          <TableCell>{ticket.user_email || 'N/A'}</TableCell>
+                          <TableCell>{ticket.user_id || 'N/A'}</TableCell>
                           <TableCell className="font-mono">{ticket.ticket_number}</TableCell>
-                          <TableCell>{ticket.lotteries?.name}</TableCell>
+                          <TableCell>{ticket.orders?.lottery_name}</TableCell>
                           <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
                         </TableRow>
                       ))}
@@ -517,10 +538,10 @@ const AdminPanel = () => {
                         <TableRow key={lottery.id}>
                           <TableCell className="font-medium">{lottery.name}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{lottery.lottery_type}</Badge>
+                            <Badge variant="outline">{lottery.type}</Badge>
                           </TableCell>
                           <TableCell>{new Date(lottery.draw_date).toLocaleString()}</TableCell>
-                          <TableCell>₹{lottery.first_prize?.toLocaleString()}</TableCell>
+                          <TableCell>₹{lottery.prize?.toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge variant={
                               lottery.status === 'active' ? 'default' :
@@ -577,9 +598,9 @@ const AdminPanel = () => {
                       {tickets.map((ticket) => (
                         <TableRow key={ticket.id}>
                           <TableCell className="font-mono font-bold">{ticket.ticket_number}</TableCell>
-                          <TableCell>{ticket.lotteries?.name}</TableCell>
-                          <TableCell>{ticket.user_email || ticket.user_name || 'N/A'}</TableCell>
-                          <TableCell>{ticket.user_phone || 'N/A'}</TableCell>
+                          <TableCell>{ticket.orders?.lottery_name}</TableCell>
+                          <TableCell>{ticket.user_id}</TableCell>
+                          <TableCell>-</TableCell>
                           <TableCell>{new Date(ticket.created_at).toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
@@ -673,14 +694,14 @@ const AdminPanel = () => {
                         <TableRow key={result.id}>
                           <TableCell className="font-medium">{result.lotteries?.name}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{result.lotteries?.lottery_type}</Badge>
+                            <Badge variant="outline">{result.lotteries?.type}</Badge>
                           </TableCell>
                           <TableCell className="font-mono font-bold text-green-600">
-                            {result.first_prize_number}
+                            {result.winning_numbers?.[0] || '-'}
                           </TableCell>
-                          <TableCell className="font-mono">{result.second_prize_number || '-'}</TableCell>
-                          <TableCell className="font-mono">{result.third_prize_number || '-'}</TableCell>
-                          <TableCell>{new Date(result.declared_at).toLocaleString()}</TableCell>
+                          <TableCell className="font-mono">{result.winning_numbers?.[1] || '-'}</TableCell>
+                          <TableCell className="font-mono">{result.winning_numbers?.[2] || '-'}</TableCell>
+                          <TableCell>{new Date(result.created_at).toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

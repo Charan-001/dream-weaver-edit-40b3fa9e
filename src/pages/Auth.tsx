@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import lotteryLogo from "@/assets/lottery-logo.png";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const Auth = () => {
   });
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isLogin) {
@@ -56,9 +57,30 @@ const Auth = () => {
         return;
       }
 
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            phone: formData.phone,
+          },
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Registration Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Registration Successful",
-        description: "Please login to continue",
+        description: "You can now log in with your credentials",
       });
       setIsLogin(true);
       setFormData({
@@ -80,25 +102,42 @@ const Auth = () => {
         return;
       }
 
-      // Check for admin credentials (WARNING: This is not secure for production!)
-      if (formData.email === "admin@gmail.com" && formData.password === "admin123") {
-        localStorage.setItem("isAdmin", "true");
-        localStorage.setItem("userLoggedIn", "true");
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (roleData) {
         toast({
           title: "Admin Login Successful",
           description: "Welcome to Admin Panel",
         });
         navigate("/admin");
-        return;
+      } else {
+        toast({
+          title: "Login Successful",
+          description: "Welcome to DL Raffle",
+        });
+        navigate("/dashboard");
       }
-
-      // Regular user login
-      localStorage.setItem("userLoggedIn", "true");
-      toast({
-        title: "Login Successful",
-        description: "Welcome to DL Raffle",
-      });
-      navigate("/dashboard");
     }
   };
 
