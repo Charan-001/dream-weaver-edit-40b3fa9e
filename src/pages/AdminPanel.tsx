@@ -20,6 +20,7 @@ const AdminPanel = () => {
   const [lotteries, setLotteries] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   
   const [newLottery, setNewLottery] = useState({
     name: "",
@@ -97,7 +98,17 @@ const AdminPanel = () => {
   };
 
   const fetchAllData = async () => {
-    await Promise.all([fetchLotteries(), fetchTickets(), fetchResults()]);
+    await Promise.all([fetchLotteries(), fetchTickets(), fetchResults(), fetchTotalUsers()]);
+  };
+
+  const fetchTotalUsers = async () => {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+    
+    if (!error && count !== null) {
+      setTotalUsers(count);
+    }
   };
 
   const fetchLotteries = async () => {
@@ -264,10 +275,11 @@ const AdminPanel = () => {
   };
 
   const stats = {
-    totalUsers: tickets.filter((t, i, self) => self.findIndex(ticket => ticket.user_id === t.user_id) === i).length,
+    totalUsers: totalUsers,
     totalTickets: tickets.length,
     totalRevenue: `₹${tickets.reduce((sum, t) => {
-      return sum + (t.orders?.ticket_price || 0);
+      const price = t.orders?.ticket_price || 0;
+      return sum + Number(price);
     }, 0).toLocaleString()}`,
     activeDraws: lotteries.filter(l => l.status === 'active' || l.status === 'upcoming').length,
     completedDraws: lotteries.filter(l => l.status === 'completed').length,
@@ -402,14 +414,22 @@ const AdminPanel = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tickets.slice(0, 10).map((ticket) => (
-                        <TableRow key={ticket.id}>
-                          <TableCell>{ticket.user_id || 'N/A'}</TableCell>
-                          <TableCell className="font-mono">{ticket.ticket_number}</TableCell>
-                          <TableCell>{ticket.orders?.lottery_name}</TableCell>
-                          <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                      {tickets.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No tickets purchased yet
+                          </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        tickets.slice(0, 10).map((ticket) => (
+                          <TableRow key={ticket.id}>
+                            <TableCell className="font-mono text-xs">{ticket.user_id?.slice(0, 8)}...</TableCell>
+                            <TableCell className="font-mono font-semibold">{ticket.ticket_number}</TableCell>
+                            <TableCell>{ticket.orders?.lottery_name || 'N/A'}</TableCell>
+                            <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
