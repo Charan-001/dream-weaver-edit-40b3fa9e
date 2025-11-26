@@ -52,14 +52,12 @@ const Results = () => {
         *,
         lotteries (
           name,
-          lottery_type,
-          first_prize,
-          second_prize,
-          third_prize,
+          type,
+          prize,
           draw_date
         )
       `)
-      .order('declared_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (!error && data) {
       setResults(data);
@@ -71,9 +69,11 @@ const Results = () => {
   const checkWinningTickets = () => {
     const winningTickets: string[] = [];
     results.forEach(result => {
-      if (bookedTickets.includes(result.first_prize_number)) winningTickets.push(result.first_prize_number);
-      if (result.second_prize_number && bookedTickets.includes(result.second_prize_number)) winningTickets.push(result.second_prize_number);
-      if (result.third_prize_number && bookedTickets.includes(result.third_prize_number)) winningTickets.push(result.third_prize_number);
+      result.winning_numbers?.forEach((number: string) => {
+        if (bookedTickets.includes(number)) {
+          winningTickets.push(number);
+        }
+      });
     });
     return winningTickets;
   };
@@ -192,39 +192,32 @@ const Results = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-muted-foreground">Type</p>
-                      <p className="text-lg font-bold capitalize">{result.lotteries?.lottery_type}</p>
+                      <p className="text-lg font-bold capitalize">{result.lotteries?.type}</p>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center p-4 bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-lg border border-yellow-500/20">
-                      <Trophy className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-                      <p className="text-sm font-medium text-muted-foreground mb-1">First Prize</p>
-                      <p className="text-2xl font-bold text-yellow-600 mb-2">{result.first_prize_number}</p>
-                      <p className="text-lg font-semibold">₹{result.lotteries?.first_prize?.toLocaleString()}</p>
-                    </div>
-
-                    {result.second_prize_number && (
-                      <div className="text-center p-4 bg-gradient-to-br from-gray-400/10 to-gray-500/10 rounded-lg border border-gray-400/20">
-                        <Trophy className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Second Prize</p>
-                        <p className="text-2xl font-bold text-gray-600 mb-2">{result.second_prize_number}</p>
-                        <p className="text-lg font-semibold">₹{result.lotteries?.second_prize?.toLocaleString()}</p>
-                      </div>
-                    )}
-
-                    {result.third_prize_number && (
-                      <div className="text-center p-4 bg-gradient-to-br from-orange-600/10 to-orange-700/10 rounded-lg border border-orange-600/20">
-                        <Trophy className="h-8 w-8 mx-auto mb-2 text-orange-600" />
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Third Prize</p>
-                        <p className="text-2xl font-bold text-orange-600 mb-2">{result.third_prize_number}</p>
-                        <p className="text-lg font-semibold">₹{result.lotteries?.third_prize?.toLocaleString()}</p>
-                      </div>
-                    )}
+                    {result.winning_numbers?.map((number: string, idx: number) => {
+                      const prizes = [
+                        { color: 'yellow', label: 'First Prize', amount: result.prize_amount },
+                        { color: 'gray', label: 'Second Prize', amount: result.prize_amount * 0.5 },
+                        { color: 'orange', label: 'Third Prize', amount: result.prize_amount * 0.25 }
+                      ];
+                      const prize = prizes[idx] || prizes[0];
+                      
+                      return (
+                        <div key={idx} className={`text-center p-4 bg-gradient-to-br from-${prize.color}-500/10 to-${prize.color}-600/10 rounded-lg border border-${prize.color}-500/20`}>
+                          <Trophy className={`h-8 w-8 mx-auto mb-2 text-${prize.color}-500`} />
+                          <p className="text-sm font-medium text-muted-foreground mb-1">{prize.label}</p>
+                          <p className={`text-2xl font-bold text-${prize.color}-600 mb-2`}>{number}</p>
+                          <p className="text-lg font-semibold">₹{prize.amount?.toLocaleString()}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                   <p className="text-xs text-muted-foreground text-center mt-4">
-                    Result declared on {new Date(result.declared_at).toLocaleString()}
+                    Result declared on {new Date(result.created_at).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>

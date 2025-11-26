@@ -114,7 +114,7 @@ const AdminPanel = () => {
   const fetchTickets = async () => {
     const { data, error } = await supabase
       .from('booked_tickets')
-      .select('*, orders(lottery_name)')
+      .select('*, orders(lottery_name, ticket_price)')
       .order('created_at', { ascending: false })
       .limit(50);
     

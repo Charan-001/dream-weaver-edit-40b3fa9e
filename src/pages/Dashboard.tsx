@@ -71,10 +71,10 @@ const Dashboard = () => {
         *,
         lotteries (
           name,
-          first_prize
+          prize
         )
       `)
-      .order('declared_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(3);
     
     if (!error && data) {
@@ -105,8 +105,8 @@ const Dashboard = () => {
                 <Card key={lottery.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-105 duration-300">
                   <div className={`bg-gradient-to-br ${getColorForLottery(index)} p-8 text-white relative`}>
                     <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
-                    <p className="text-sm opacity-90 mb-4 capitalize">{lottery.lottery_type} Draw</p>
-                    <p className="text-5xl font-bold mb-2">₹{(lottery.first_prize / 100000).toFixed(0)}L</p>
+                    <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type} Draw</p>
+                    <p className="text-5xl font-bold mb-2">₹{(lottery.prize / 100000).toFixed(0)}L</p>
                   </div>
                   <CardContent className="p-6">
                     <p className="text-sm text-muted-foreground mb-2">
@@ -138,8 +138,8 @@ const Dashboard = () => {
                   <Card key={lottery.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-105 duration-300">
                     <div className={`bg-gradient-to-br ${getColorForLottery(index)} p-8 text-white relative`}>
                       <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
-                      <p className="text-sm opacity-90 mb-4 capitalize">{lottery.lottery_type}</p>
-                      <p className="text-5xl font-bold mb-2">₹{(lottery.first_prize / 100000).toFixed(0)}L</p>
+                      <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type}</p>
+                      <p className="text-5xl font-bold mb-2">₹{(lottery.prize / 100000).toFixed(0)}L</p>
                     </div>
                     <CardContent className="p-6">
                       <p className="text-sm text-muted-foreground mb-2">
@@ -172,7 +172,7 @@ const Dashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <p className="text-3xl font-bold text-primary">
-                        ₹{(lottery.first_prize / 10000000).toFixed(1)} Cr
+                        ₹{(lottery.prize / 10000000).toFixed(1)} Cr
                       </p>
                     </CardContent>
                   </Card>
@@ -188,19 +188,19 @@ const Dashboard = () => {
                     <CardHeader>
                       <CardTitle>{result.lotteries?.name}</CardTitle>
                       <CardDescription>
-                        {new Date(result.declared_at).toLocaleDateString()}
+                        {new Date(result.created_at).toLocaleDateString()}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
                         <div>
                           <p className="text-sm text-muted-foreground">Winner</p>
-                          <p className="text-xl font-bold font-mono">{result.first_prize_number}</p>
+                          <p className="text-xl font-bold font-mono">{result.winning_numbers?.[0] || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Prize</p>
                           <p className="text-lg font-semibold">
-                            ₹{(result.lotteries?.first_prize / 10000000).toFixed(1)} Crore
+                            ₹{(result.lotteries?.prize / 10000000).toFixed(1)} Crore
                           </p>
                         </div>
                       </div>
