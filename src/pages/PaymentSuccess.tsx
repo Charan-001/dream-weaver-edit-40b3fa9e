@@ -4,30 +4,71 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, Download, Home, Ticket } from "lucide-react";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get order details from localStorage
-    const details = localStorage.getItem("lastOrder");
-    if (details) {
-      setOrderDetails(JSON.parse(details));
-      // Clear the last order after retrieving
-      localStorage.removeItem("lastOrder");
-    } else {
-      // If no order details, redirect to dashboard
-      navigate("/dashboard");
+    fetchRecentOrder();
+  }, []);
+
+  const fetchRecentOrder = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
     }
-  }, [navigate]);
+
+    // Fetch recent booked tickets
+    const { data: tickets, error } = await supabase
+      .from('booked_tickets')
+      .select('*, orders(lottery_name, ticket_price, transaction_id, purchase_date)')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error || !tickets || tickets.length === 0) {
+      navigate("/dashboard");
+      return;
+    }
+
+    const totalAmount = tickets.reduce((sum, t) => sum + Number(t.orders?.ticket_price || 0), 0);
+    
+    setOrderDetails({
+      tickets: tickets.map(t => ({
+        ticketNumber: t.ticket_number,
+        drawDate: new Date(t.draw_date).toLocaleDateString('en-GB'),
+        price: t.orders?.ticket_price || 0,
+        lotteryName: t.orders?.lottery_name || ''
+      })),
+      ticketCount: tickets.length,
+      subTotal: totalAmount,
+      amountPaid: totalAmount,
+      transactionId: tickets[0].orders?.transaction_id || `TXN${Date.now()}`,
+      date: tickets[0].orders?.purchase_date || new Date().toISOString()
+    });
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!orderDetails) {
     return null;
   }
 
-  const transactionId = `TXN${Date.now().toString().slice(-10)}`;
-  const orderDate = new Date().toLocaleDateString("en-IN", {
+  const orderDate = new Date(orderDetails.date).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -59,7 +100,7 @@ const PaymentSuccess = () => {
               <div className="pb-6 border-b border-border">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-muted-foreground">Transaction ID</span>
-                  <span className="font-mono font-semibold">{transactionId}</span>
+                  <span className="font-mono font-semibold">{orderDetails.transactionId}</span>
                 </div>
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-muted-foreground">Order Date</span>

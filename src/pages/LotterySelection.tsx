@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, ShoppingCart, Info, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const LotterySelection = () => {
   const { id } = useParams();
@@ -12,38 +13,47 @@ const LotterySelection = () => {
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [numbers, setNumbers] = useState<string[]>([]);
   const [selectedBunch, setSelectedBunch] = useState(5);
-  const [selectedDates, setSelectedDates] = useState<string[]>(["08/11/2025"]);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [showMoreNumbers, setShowMoreNumbers] = useState(false);
+  const [lottery, setLottery] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate ticket numbers based on lottery type
-    let prefix = "15-19";
-    let startNum = 2548;
+    fetchLottery();
+  }, [id]);
+
+  const fetchLottery = async () => {
+    if (!id) return;
     
-    switch (id) {
-      case "10-evening":
-        prefix = "10-19";
-        startNum = 1000;
-        break;
-      case "50-weekly":
-        prefix = "50-19";
-        startNum = 5000;
-        break;
-      case "night-weekly":
-        prefix = "20-19";
-        startNum = 2000;
-        break;
-      default:
-        prefix = "15-19";
-        startNum = 2548;
+    const { data, error } = await supabase
+      .from('lotteries')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) {
+      toast({
+        title: "Error",
+        description: "Lottery not found",
+        variant: "destructive"
+      });
+      navigate("/lotteries");
+      return;
     }
     
+    setLottery(data);
+    setSelectedDates([new Date(data.draw_date).toLocaleDateString('en-GB')]);
+    
+    // Generate ticket numbers
+    const prefix = `${Math.floor(Math.random() * 50)}-${new Date(data.draw_date).getFullYear().toString().slice(-2)}`;
+    const startNum = Math.floor(Math.random() * 5000) + 1000;
     const numberArray = Array.from({ length: 100 }, (_, i) => {
       const num = startNum + i;
       return `${prefix}/${num}`;
     });
     setNumbers(numberArray);
-  }, [id]);
+    setLoading(false);
+  };
 
   const generateDateOptions = () => {
     const dates = [];
@@ -96,7 +106,7 @@ const LotterySelection = () => {
     });
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (selectedNumbers.length === 0) {
       toast({
         title: "No tickets selected",
@@ -106,31 +116,45 @@ const LotterySelection = () => {
       return;
     }
 
-    // Add items to cart
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    selectedNumbers.forEach(number => {
-      selectedDates.forEach(date => {
-        cart.push({
-          drawDate: date,
-          lotteryName: `${lotteryDetails.name} (${lotteryDetails.time})`,
-          ticketNumber: number,
-          quantity: 1,
-          price: lotteryDetails.price
-        });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Login Required",
+        description: "Please login to add items to cart",
+        variant: "destructive"
       });
-    });
-    localStorage.setItem("cart", JSON.stringify(cart));
+      navigate("/auth");
+      return;
+    }
+
+    // Save to database cart_items
+    const { error } = await supabase
+      .from('cart_items')
+      .insert([{
+        user_id: session.user.id,
+        lottery_id: lottery.id,
+        ticket_numbers: selectedNumbers,
+        draw_dates: selectedDates
+      }]);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add to cart",
+        variant: "destructive"
+      });
+      return;
+    }
 
     toast({
       title: "Added to Cart",
       description: `${selectedNumbers.length} ticket(s) added to cart`,
     });
 
-    // Reset selected numbers after adding to cart
     setSelectedNumbers([]);
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (selectedNumbers.length === 0) {
       toast({
         title: "No tickets selected",
@@ -140,20 +164,35 @@ const LotterySelection = () => {
       return;
     }
 
-    // Add items to cart and redirect
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    selectedNumbers.forEach(number => {
-      selectedDates.forEach(date => {
-        cart.push({
-          drawDate: date,
-          lotteryName: `${lotteryDetails.name} (${lotteryDetails.time})`,
-          ticketNumber: number,
-          quantity: 1,
-          price: lotteryDetails.price
-        });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Login Required",
+        description: "Please login to purchase tickets",
+        variant: "destructive"
       });
-    });
-    localStorage.setItem("cart", JSON.stringify(cart));
+      navigate("/auth");
+      return;
+    }
+
+    // Save to database and redirect
+    const { error } = await supabase
+      .from('cart_items')
+      .insert([{
+        user_id: session.user.id,
+        lottery_id: lottery.id,
+        ticket_numbers: selectedNumbers,
+        draw_dates: selectedDates
+      }]);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to proceed",
+        variant: "destructive"
+      });
+      return;
+    }
 
     navigate("/cart");
   };
@@ -164,26 +203,16 @@ const LotterySelection = () => {
   // Countdown timer (dummy values for now)
   const countdown = { days: 0, hours: 3, minutes: 52, seconds: 9 };
 
-  const getLotteryDetails = () => {
-    switch (id) {
-      case "10-evening":
-        return { name: "DL 10 EVENING", price: 10, time: "5:40 PM" };
-      case "50-weekly":
-        return { name: "DL 50 WEEKLY", price: 50, time: "8:00 PM" };
-      case "night-weekly":
-        return { name: "DL 20 NIGHT WEEKLY", price: 20, time: "9:30 PM" };
-      case "1-crore":
-        return { name: "DL 1 CRORE BUMPER", price: 100, time: "12:00 PM" };
-      case "50-lakh":
-        return { name: "DL 50 LAKH SPECIAL", price: 50, time: "3:00 PM" };
-      case "10-lakh":
-        return { name: "DL 10 LAKH MONTHLY", price: 40, time: "6:00 PM" };
-      default:
-        return { name: "DL LOTTERY", price: 10, time: "5:40 PM" };
-    }
-  };
-
-  const lotteryDetails = getLotteryDetails();
+  if (loading || !lottery) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading lottery details...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-8 md:pb-12">
@@ -228,13 +257,13 @@ const LotterySelection = () => {
 
           <div className="space-y-6 px-6 md:px-8 lg:px-0">
             <div>
-              <h1 className="text-2xl font-bold mb-2">{lotteryDetails.name}</h1>
+              <h1 className="text-2xl font-bold mb-2">{lottery.name}</h1>
               <div className="flex items-center gap-6 text-sm">
-                <div>Ticket Price ₹{lotteryDetails.price}</div>
+                <div>Ticket Price ₹{lottery.ticket_price}</div>
                 <div className="h-8 w-px bg-border" />
-                <div>Draw Date : 08/11/2025</div>
+                <div>Draw Date : {new Date(lottery.draw_date).toLocaleDateString('en-GB')}</div>
                 <div className="h-8 w-px bg-border" />
-                <div>Draw Time : {lotteryDetails.time}</div>
+                <div>Prize : ₹{(lottery.prize / 100000).toFixed(1)}L</div>
               </div>
             </div>
 
