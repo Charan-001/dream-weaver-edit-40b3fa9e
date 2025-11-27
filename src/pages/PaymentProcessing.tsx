@@ -2,71 +2,106 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const PaymentProcessing = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate payment processing
-    const timer = setTimeout(() => {
-      // Get cart items
-      const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
-      
-      if (cartItems.length === 0) {
-        navigate("/cart");
-        return;
+    processPayment();
+  }, []);
+
+  const processPayment = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    // Get cart items from database
+    const { data: cartItems, error: cartError } = await supabase
+      .from('cart_items')
+      .select('*, lotteries(*)')
+      .eq('user_id', session.user.id);
+    
+    if (cartError || !cartItems || cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add items to cart",
+        variant: "destructive"
+      });
+      navigate("/cart");
+      return;
+    }
+
+    // Create orders and booked tickets
+    try {
+      for (const cartItem of cartItems) {
+        const lottery = cartItem.lotteries;
+        if (!lottery) continue;
+
+        // For each ticket number and draw date combination
+        for (const ticketNumber of cartItem.ticket_numbers) {
+          for (const drawDate of cartItem.draw_dates) {
+            // Create order
+            const transactionId = `TXN${Date.now()}${Math.floor(Math.random() * 10000)}`;
+            const { data: order, error: orderError } = await supabase
+              .from('orders')
+              .insert([{
+                user_id: session.user.id,
+                lottery_id: cartItem.lottery_id,
+                lottery_name: lottery.name,
+                ticket_price: lottery.ticket_price,
+                draw_time: drawDate,
+                transaction_id: transactionId,
+                status: 'confirmed'
+              }])
+              .select()
+              .single();
+
+            if (orderError || !order) {
+              throw new Error('Failed to create order');
+            }
+
+            // Create booked ticket
+            const { error: ticketError } = await supabase
+              .from('booked_tickets')
+              .insert([{
+                user_id: session.user.id,
+                order_id: order.id,
+                ticket_number: ticketNumber,
+                draw_date: lottery.draw_date
+              }]);
+
+            if (ticketError) {
+              throw new Error('Failed to book ticket');
+            }
+          }
+        }
       }
 
-      // Group cart items by lottery type
-      const groupedOrders: { [key: string]: any[] } = {};
-      cartItems.forEach((item: any) => {
-        const key = `${item.lotteryName}_${item.drawTime}`;
-        if (!groupedOrders[key]) {
-          groupedOrders[key] = [];
-        }
-        groupedOrders[key].push(item);
-      });
-
-      // Create order details for each lottery type
-      const existingOrders = JSON.parse(localStorage.getItem("orderDetails") || "[]");
-      const newOrders = Object.values(groupedOrders).map((items) => {
-        const firstItem = items[0];
-        return {
-          lotteryName: firstItem.lotteryName,
-          lotteryPrice: firstItem.price,
-          drawTime: firstItem.drawTime,
-          tickets: items.map((item: any) => item.ticketNumber),
-          total: items.reduce((sum: number, item: any) => sum + item.price, 0),
-          date: new Date().toISOString(),
-          transactionId: `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`
-        };
-      });
-
-      // Append new orders to existing orders
-      const allOrders = [...existingOrders, ...newOrders];
-      localStorage.setItem("orderDetails", JSON.stringify(allOrders));
-
-      // Save last order for success page
-      const subTotal = cartItems.reduce((total: number, item: any) => total + item.price, 0);
-      const lastOrderDetails = {
-        tickets: cartItems,
-        ticketCount: cartItems.length,
-        subTotal: subTotal,
-        amountPaid: subTotal,
-        transactionId: newOrders[0].transactionId,
-        date: new Date().toISOString()
-      };
-      localStorage.setItem("lastOrder", JSON.stringify(lastOrderDetails));
-
       // Clear cart
-      localStorage.setItem("cart", "[]");
+      await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', session.user.id);
 
-      // Redirect to success page
-      navigate("/payment-success", { replace: true });
-    }, 3000); // 3 seconds processing time
+      // Redirect to success
+      setTimeout(() => {
+        navigate("/payment-success", { replace: true });
+      }, 2000);
 
-    return () => clearTimeout(timer);
-  }, [navigate]);
+    } catch (error) {
+      toast({
+        title: "Payment Failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+      navigate("/cart");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">

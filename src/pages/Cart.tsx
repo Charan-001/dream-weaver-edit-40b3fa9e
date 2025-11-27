@@ -5,29 +5,64 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartItem {
-  drawDate: string;
-  lotteryName: string;
-  ticketNumber: string;
-  quantity: number;
-  price: number;
+  id: string;
+  lottery_id: string;
+  ticket_numbers: string[];
+  draw_dates: string[];
+  lotteries?: {
+    name: string;
+    ticket_price: number;
+    prize: number;
+  };
 }
 
 const Cart = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const items = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCartItems(items);
+    fetchCartItems();
   }, []);
 
-  const removeItem = (index: number) => {
-    const updatedCart = cartItems.filter((_, i) => i !== index);
-    setCartItems(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  const fetchCartItems = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select('*, lotteries(name, ticket_price, prize)')
+      .eq('user_id', session.user.id);
+    
+    if (!error && data) {
+      setCartItems(data);
+    }
+    setLoading(false);
+  };
+
+  const removeItem = async (itemId: string) => {
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', itemId);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove item",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCartItems(cartItems.filter(item => item.id !== itemId));
     toast({
       title: "Item Removed",
       description: "Item removed from cart",
@@ -35,7 +70,10 @@ const Cart = () => {
   };
 
   const calculateSubTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cartItems.reduce((total, item) => {
+      const ticketCount = item.ticket_numbers.length * item.draw_dates.length;
+      return total + (ticketCount * (item.lotteries?.ticket_price || 0));
+    }, 0);
   };
 
   const handlePayNow = () => {
@@ -69,9 +107,18 @@ const Cart = () => {
       </div>
 
       <div className="flex-1 container mx-auto px-6 md:px-8 lg:px-12 py-8 md:py-12">
-        <h1 className="text-3xl font-bold mb-8 text-center">My Cart ({cartItems.length})</h1>
+        <h1 className="text-3xl font-bold mb-8 text-center">
+          My Cart ({cartItems.reduce((sum, item) => sum + item.ticket_numbers.length, 0)} tickets)
+        </h1>
 
-        {cartItems.length > 0 ? (
+        {loading ? (
+          <Card className="max-w-2xl mx-auto">
+            <div className="p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading cart...</p>
+            </div>
+          </Card>
+        ) : cartItems.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {/* Cart Items */}
             <div className="lg:col-span-2">
@@ -86,31 +133,38 @@ const Cart = () => {
                   </div>
 
                   {/* Cart Items */}
-                  {cartItems.map((item, index) => (
-                    <div key={index} className="space-y-3">
-                      <div className="grid grid-cols-5 gap-4 items-center">
-                        <div className="border border-border rounded-full px-4 py-2 text-center text-sm">
-                          {item.drawDate}
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="space-y-3 border-b border-border pb-4 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="font-semibold">{item.lotteries?.name || 'Lottery'}</div>
+                          <div className="text-xs text-muted-foreground">Prize: ₹{((item.lotteries?.prize || 0) / 100000).toFixed(1)}L</div>
                         </div>
-                        <div className="col-span-2">
-                          <div className="text-xs text-muted-foreground mb-1">{item.lotteryName}</div>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {item.ticket_numbers.map((ticketNum, idx) => (
+                        <div key={idx} className="grid grid-cols-5 gap-4 items-center">
+                          <div className="border border-border rounded-full px-4 py-2 text-center text-sm">
+                            {item.draw_dates[0]}
+                          </div>
+                          <div className="col-span-2">
+                            <div className="border border-border rounded-full px-4 py-2 text-center font-semibold">
+                              {ticketNum}
+                            </div>
+                          </div>
                           <div className="border border-border rounded-full px-4 py-2 text-center font-semibold">
-                            {item.ticketNumber}
+                            {item.draw_dates.length}
+                          </div>
+                          <div className="text-right font-semibold">
+                            ₹{(item.lotteries?.ticket_price || 0) * item.draw_dates.length}
                           </div>
                         </div>
-                        <div className="border border-border rounded-full px-4 py-2 text-center font-semibold">
-                          {item.quantity}
-                        </div>
-                        <div className="flex items-center justify-end gap-2">
-                          <span className="font-semibold">₹{item.price * item.quantity}</span>
-                          <button
-                            onClick={() => removeItem(index)}
-                            className="w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   ))}
 
