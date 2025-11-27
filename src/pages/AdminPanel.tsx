@@ -125,9 +125,8 @@ const AdminPanel = () => {
   const fetchTickets = async () => {
     const { data, error } = await supabase
       .from('booked_tickets')
-      .select('*, orders(lottery_name, ticket_price)')
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .select('*, orders(lottery_name, ticket_price, lottery_id, lotteries(prize))')
+      .order('created_at', { ascending: false });
     
     if (!error && data) {
       setTickets(data);
@@ -600,7 +599,7 @@ const AdminPanel = () => {
             <Card>
               <CardHeader>
                 <CardTitle>All Tickets</CardTitle>
-                <CardDescription>View all purchased tickets</CardDescription>
+                <CardDescription>View all purchased tickets ({tickets.length} total)</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -609,21 +608,31 @@ const AdminPanel = () => {
                       <TableRow>
                         <TableHead>Ticket Number</TableHead>
                         <TableHead>Lottery</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Prize</TableHead>
+                        <TableHead>Draw Date</TableHead>
                         <TableHead>User</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Purchase Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tickets.map((ticket) => (
-                        <TableRow key={ticket.id}>
-                          <TableCell className="font-mono font-bold">{ticket.ticket_number}</TableCell>
-                          <TableCell>{ticket.orders?.lottery_name}</TableCell>
-                          <TableCell>{ticket.user_id}</TableCell>
-                          <TableCell>-</TableCell>
-                          <TableCell>{new Date(ticket.created_at).toLocaleString()}</TableCell>
+                      {tickets.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No tickets purchased yet
+                          </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        tickets.map((ticket) => (
+                          <TableRow key={ticket.id}>
+                            <TableCell className="font-mono font-bold text-primary">{ticket.ticket_number}</TableCell>
+                            <TableCell className="font-medium">{ticket.orders?.lottery_name || 'N/A'}</TableCell>
+                            <TableCell className="text-emerald-600 font-semibold">₹{Number(ticket.orders?.ticket_price || 0).toLocaleString()}</TableCell>
+                            <TableCell className="text-amber-600 font-semibold">₹{Number(ticket.orders?.lotteries?.prize || 0).toLocaleString()}</TableCell>
+                            <TableCell className="text-muted-foreground">{new Date(ticket.draw_date).toLocaleDateString()}</TableCell>
+                            <TableCell className="font-mono text-xs text-muted-foreground">{ticket.user_id?.slice(0, 8)}...</TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
