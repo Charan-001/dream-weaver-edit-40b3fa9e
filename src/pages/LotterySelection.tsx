@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,10 +17,40 @@ const LotterySelection = () => {
   const [showMoreNumbers, setShowMoreNumbers] = useState(false);
   const [lottery, setLottery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     fetchLottery();
   }, [id]);
+
+  const calculateCountdown = useCallback(() => {
+    if (!lottery) return;
+    
+    const now = new Date().getTime();
+    const drawDate = new Date(lottery.draw_date).getTime();
+    const distance = drawDate - now;
+
+    if (distance < 0) {
+      setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      return;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    setCountdown({ days, hours, minutes, seconds });
+  }, [lottery]);
+
+  useEffect(() => {
+    if (!lottery) return;
+    
+    calculateCountdown();
+    const timer = setInterval(calculateCountdown, 1000);
+    
+    return () => clearInterval(timer);
+  }, [lottery, calculateCountdown]);
 
   const fetchLottery = async () => {
     if (!id) return;
@@ -42,24 +72,42 @@ const LotterySelection = () => {
     }
     
     setLottery(data);
-    setSelectedDates([new Date(data.draw_date).toLocaleDateString('en-GB')]);
+    setSelectedDates([data.draw_date]);
     
-    // Generate ticket numbers
+    // Fetch already booked tickets for this lottery
+    const { data: bookedTickets } = await supabase
+      .from('booked_tickets')
+      .select('ticket_number')
+      .eq('draw_date', data.draw_date);
+    
+    const bookedNumbers = new Set(bookedTickets?.map(t => t.ticket_number) || []);
+    
+    // Generate unique ticket numbers that aren't already booked
     const prefix = `${Math.floor(Math.random() * 50)}-${new Date(data.draw_date).getFullYear().toString().slice(-2)}`;
     const startNum = Math.floor(Math.random() * 5000) + 1000;
-    const numberArray = Array.from({ length: 100 }, (_, i) => {
+    const numberArray: string[] = [];
+    
+    for (let i = 0; numberArray.length < 100; i++) {
       const num = startNum + i;
-      return `${prefix}/${num}`;
-    });
+      const ticketNum = `${prefix}/${num}`;
+      if (!bookedNumbers.has(ticketNum)) {
+        numberArray.push(ticketNum);
+      }
+    }
+    
     setNumbers(numberArray);
     setLoading(false);
   };
 
   const generateDateOptions = () => {
+    if (!lottery) return [];
     const dates = [];
+    const startDate = new Date(lottery.draw_date);
+    
     for (let i = 0; i < 9; i++) {
-      const date = new Date(2025, 10, 8 + i); // Starting from 08/11/2025
-      dates.push(date.toLocaleDateString('en-GB'));
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      dates.push(date.toISOString().split('T')[0]);
     }
     return dates;
   };
@@ -200,9 +248,6 @@ const LotterySelection = () => {
   const displayedNumbers = showMoreNumbers ? numbers : numbers.slice(0, 18);
   const dateOptions = generateDateOptions();
 
-  // Countdown timer (dummy values for now)
-  const countdown = { days: 0, hours: 3, minutes: 52, seconds: 9 };
-
   if (loading || !lottery) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -261,9 +306,9 @@ const LotterySelection = () => {
               <div className="flex items-center gap-6 text-sm">
                 <div>Ticket Price ₹{lottery.ticket_price}</div>
                 <div className="h-8 w-px bg-border" />
-                <div>Draw Date : {new Date(lottery.draw_date).toLocaleDateString('en-GB')}</div>
+                <div>Draw Date : {new Date(lottery.draw_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
                 <div className="h-8 w-px bg-border" />
-                <div>Prize : ₹{(lottery.prize / 100000).toFixed(1)}L</div>
+                <div>Prize : ₹{lottery.prize >= 10000000 ? `${(lottery.prize / 10000000).toFixed(1)} Crore` : `${(lottery.prize / 100000).toFixed(1)} Lakh`}</div>
               </div>
             </div>
 
@@ -337,7 +382,7 @@ const LotterySelection = () => {
                       onClick={() => toggleDate(date)}
                       className="rounded-full h-12"
                     >
-                      {date}
+                      {new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </Button>
                   );
                 })}
