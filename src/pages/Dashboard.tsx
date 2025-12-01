@@ -106,7 +106,9 @@ const Dashboard = () => {
                   <div className={`bg-gradient-to-br ${getColorForLottery(index)} p-8 text-white relative`}>
                     <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
                     <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type} Draw</p>
-                    <p className="text-5xl font-bold mb-2">₹{(lottery.prize / 100000).toFixed(0)}L</p>
+                    <p className="text-5xl font-bold mb-2">
+                      ₹{lottery.prize >= 10000000 ? `${(lottery.prize / 10000000).toFixed(1)} Cr` : `${(lottery.prize / 100000).toFixed(0)}L`}
+                    </p>
                   </div>
                   <CardContent className="p-6">
                     <p className="text-sm text-muted-foreground mb-2">
@@ -139,7 +141,9 @@ const Dashboard = () => {
                     <div className={`bg-gradient-to-br ${getColorForLottery(index)} p-8 text-white relative`}>
                       <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
                       <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type}</p>
-                      <p className="text-5xl font-bold mb-2">₹{(lottery.prize / 100000).toFixed(0)}L</p>
+                      <p className="text-5xl font-bold mb-2">
+                        ₹{lottery.prize >= 10000000 ? `${(lottery.prize / 10000000).toFixed(1)} Cr` : `${(lottery.prize / 100000).toFixed(0)}L`}
+                      </p>
                     </div>
                     <CardContent className="p-6">
                       <p className="text-sm text-muted-foreground mb-2">
