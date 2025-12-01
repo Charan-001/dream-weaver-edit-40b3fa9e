@@ -259,6 +259,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_expired_lotteries: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
