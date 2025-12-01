@@ -308,7 +308,11 @@ const LotterySelection = () => {
                 <div className="h-8 w-px bg-border" />
                 <div>Draw Date : {new Date(lottery.draw_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
                 <div className="h-8 w-px bg-border" />
-                <div>Prize : ₹{lottery.prize >= 10000000 ? `${(lottery.prize / 10000000).toFixed(1)} Crore` : `${(lottery.prize / 100000).toFixed(1)} Lakh`}</div>
+                <div>Prize : ₹{lottery.prize >= 10000000 
+                  ? `${(lottery.prize / 10000000).toFixed(1)} Crore` 
+                  : lottery.prize >= 100000 
+                  ? `${(lottery.prize / 100000).toFixed(1)} Lakh` 
+                  : lottery.prize.toFixed(0)}</div>
               </div>
             </div>
 

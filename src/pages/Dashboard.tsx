@@ -107,7 +107,11 @@ const Dashboard = () => {
                     <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
                     <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type} Draw</p>
                     <p className="text-5xl font-bold mb-2">
-                      ₹{lottery.prize >= 10000000 ? `${(lottery.prize / 10000000).toFixed(1)} Cr` : `${(lottery.prize / 100000).toFixed(0)}L`}
+                      ₹{lottery.prize >= 10000000 
+                        ? `${(lottery.prize / 10000000).toFixed(1)} Cr` 
+                        : lottery.prize >= 100000 
+                        ? `${(lottery.prize / 100000).toFixed(1)}L` 
+                        : lottery.prize.toFixed(0)}
                     </p>
                   </div>
                   <CardContent className="p-6">
@@ -142,7 +146,11 @@ const Dashboard = () => {
                       <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
                       <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type}</p>
                       <p className="text-5xl font-bold mb-2">
-                        ₹{lottery.prize >= 10000000 ? `${(lottery.prize / 10000000).toFixed(1)} Cr` : `${(lottery.prize / 100000).toFixed(0)}L`}
+                        ₹{lottery.prize >= 10000000 
+                          ? `${(lottery.prize / 10000000).toFixed(1)} Cr` 
+                          : lottery.prize >= 100000 
+                          ? `${(lottery.prize / 100000).toFixed(1)}L` 
+                          : lottery.prize.toFixed(0)}
                       </p>
                     </div>
                     <CardContent className="p-6">
