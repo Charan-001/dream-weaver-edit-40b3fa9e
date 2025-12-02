@@ -65,6 +65,9 @@ const Dashboard = () => {
   };
 
   const fetchResults = async () => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
     const { data, error } = await supabase
       .from('lottery_results')
       .select(`
@@ -74,6 +77,7 @@ const Dashboard = () => {
           prize
         )
       `)
+      .gte('created_at', oneWeekAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(3);
     
@@ -210,9 +214,13 @@ const Dashboard = () => {
                           <p className="text-xl font-bold font-mono">{result.winning_numbers?.[0] || 'N/A'}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Prize</p>
+                          <p className="text-sm text-muted-foreground">First Prize</p>
                           <p className="text-lg font-semibold">
-                            ₹{(result.lotteries?.prize / 10000000).toFixed(1)} Crore
+                            ₹{result.prize_amount >= 10000000 
+                              ? `${(result.prize_amount / 10000000).toFixed(1)} Cr` 
+                              : result.prize_amount >= 100000 
+                              ? `${(result.prize_amount / 100000).toFixed(1)}L` 
+                              : result.prize_amount.toFixed(0)}
                           </p>
                         </div>
                       </div>
