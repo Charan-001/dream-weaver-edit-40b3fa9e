@@ -43,9 +43,15 @@ const Results = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [selectedDate]);
 
   const fetchResults = async () => {
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(selectedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
     const { data, error } = await supabase
       .from('lottery_results')
       .select(`
@@ -57,6 +63,8 @@ const Results = () => {
           draw_date
         )
       `)
+      .gte('draw_date', startOfDay.toISOString())
+      .lte('draw_date', endOfDay.toISOString())
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -160,6 +168,7 @@ const Results = () => {
                         selected={selectedDate}
                         onSelect={(date) => date && setSelectedDate(date)}
                         initialFocus
+                        className={cn("p-3 pointer-events-auto")}
                       />
                     </PopoverContent>
                   </Popover>
@@ -176,7 +185,9 @@ const Results = () => {
             <Card>
               <CardContent className="py-12 text-center">
                 <Trophy className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg text-muted-foreground">No results declared yet</p>
+                <p className="text-lg text-muted-foreground">
+                  No results found for {format(selectedDate, "PPP")}
+                </p>
               </CardContent>
             </Card>
           ) : (
