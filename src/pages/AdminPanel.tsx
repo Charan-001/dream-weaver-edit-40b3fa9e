@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut, Users, Ticket, TrendingUp, Settings, Trophy, Activity, DollarSign, RefreshCw, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import Footer from "@/components/Footer";
+
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -776,8 +776,6 @@ const AdminPanel = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      <Footer />
     </div>
   );
 };
