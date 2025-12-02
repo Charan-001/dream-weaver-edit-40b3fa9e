@@ -287,162 +287,167 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="sticky top-0 bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg p-4 z-10">
-        <div className="container mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Admin Panel</h1>
-            <p className="text-sm opacity-90">Manage your lottery system</p>
+      <div className="sticky top-0 bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg p-3 sm:p-4 z-10">
+        <div className="container mx-auto flex justify-between items-center gap-2">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate">Admin Panel</h1>
+            <p className="text-xs sm:text-sm opacity-90 hidden sm:block">Manage your lottery system</p>
           </div>
-          <Button variant="secondary" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
+          <Button variant="secondary" onClick={handleLogout} size="sm" className="shrink-0">
+            <LogOut className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 container mx-auto px-6 md:px-8 lg:px-12 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Overview
+      <div className="flex-1 container mx-auto px-3 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2 h-auto">
+            <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Overview</span>
+              <span className="sm:hidden">Home</span>
             </TabsTrigger>
-            <TabsTrigger value="lotteries" className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
-              Lotteries
+            <TabsTrigger value="lotteries" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Trophy className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Lotteries</span>
+              <span className="xs:hidden">Draws</span>
             </TabsTrigger>
-            <TabsTrigger value="tickets" className="flex items-center gap-2">
-              <Ticket className="h-4 w-4" />
-              Tickets
+            <TabsTrigger value="tickets" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Ticket className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Tickets</span>
             </TabsTrigger>
-            <TabsTrigger value="results" className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Results
+            <TabsTrigger value="results" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 col-span-2 sm:col-span-1">
+              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Results</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
+            <TabsTrigger value="settings" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 col-span-1 sm:col-span-1">
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Settings</span>
+              <span className="sm:hidden">More</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-blue-500" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Users</CardTitle>
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats.totalUsers}</div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="text-2xl sm:text-3xl font-bold">{stats.totalUsers}</div>
                   <p className="text-xs text-muted-foreground mt-1">Unique participants</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 border-emerald-500/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-                  <Ticket className="h-4 w-4 text-emerald-500" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Tickets</CardTitle>
+                  <Ticket className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats.totalTickets}</div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="text-2xl sm:text-3xl font-bold">{stats.totalTickets}</div>
                   <p className="text-xs text-muted-foreground mt-1">Tickets sold</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border-amber-500/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-amber-500" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
+                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats.totalRevenue}</div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="text-2xl sm:text-3xl font-bold">{stats.totalRevenue}</div>
                   <p className="text-xs text-muted-foreground mt-1">From ticket sales</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Active Draws</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-purple-500" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Active Draws</CardTitle>
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats.activeDraws}</div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="text-2xl sm:text-3xl font-bold">{stats.activeDraws}</div>
                   <p className="text-xs text-muted-foreground mt-1">Upcoming & active</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-rose-500/10 to-rose-600/10 border-rose-500/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Completed Draws</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-rose-500" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Completed Draws</CardTitle>
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-rose-500" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats.completedDraws}</div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="text-2xl sm:text-3xl font-bold">{stats.completedDraws}</div>
                   <p className="text-xs text-muted-foreground mt-1">Results declared</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-500/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Winning Tickets</CardTitle>
-                  <Trophy className="h-4 w-4 text-cyan-500" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Winning Tickets</CardTitle>
+                  <Trophy className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-500" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats.winningTickets}</div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="text-2xl sm:text-3xl font-bold">{stats.winningTickets}</div>
                   <p className="text-xs text-muted-foreground mt-1">Lucky winners</p>
                 </CardContent>
               </Card>
             </div>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
                   Recent Tickets
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Ticket</TableHead>
-                        <TableHead>Lottery</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tickets.length === 0 ? (
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                            No tickets purchased yet
-                          </TableCell>
+                          <TableHead className="text-xs sm:text-sm">User</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Ticket</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Lottery</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Date</TableHead>
                         </TableRow>
-                      ) : (
-                        tickets.slice(0, 10).map((ticket) => (
-                          <TableRow key={ticket.id}>
-                            <TableCell className="font-mono text-xs">{ticket.user_id?.slice(0, 8)}...</TableCell>
-                            <TableCell className="font-mono font-semibold">{ticket.ticket_number}</TableCell>
-                            <TableCell>{ticket.orders?.lottery_name || 'N/A'}</TableCell>
-                            <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                      </TableHeader>
+                      <TableBody>
+                        {tickets.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8 text-xs sm:text-sm">
+                              No tickets purchased yet
+                            </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                        ) : (
+                          tickets.slice(0, 10).map((ticket) => (
+                            <TableRow key={ticket.id}>
+                              <TableCell className="font-mono text-[10px] sm:text-xs">{ticket.user_id?.slice(0, 8)}...</TableCell>
+                              <TableCell className="font-mono font-semibold text-xs sm:text-sm">{ticket.ticket_number}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{ticket.orders?.lottery_name || 'N/A'}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="lotteries" className="space-y-6">
+          <TabsContent value="lotteries" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Create New Lottery</CardTitle>
-                <CardDescription>Add a new lottery draw to the system</CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Create New Lottery</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Add a new lottery draw to the system</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="lottery-name">Lottery Name</Label>
@@ -529,124 +534,128 @@ const AdminPanel = () => {
                     />
                   </div>
                 </div>
-                <Button onClick={handleCreateLottery} className="w-full">
+                <Button onClick={handleCreateLottery} className="w-full text-sm sm:text-base">
                   Create Lottery
                 </Button>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>All Lotteries</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">All Lotteries</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Draw Date</TableHead>
-                        <TableHead>Prize</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lotteries.map((lottery) => (
-                        <TableRow key={lottery.id}>
-                          <TableCell className="font-medium">{lottery.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{lottery.type}</Badge>
-                          </TableCell>
-                          <TableCell>{new Date(lottery.draw_date).toLocaleString()}</TableCell>
-                          <TableCell>₹{lottery.prize?.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              lottery.status === 'active' ? 'default' :
-                              lottery.status === 'upcoming' ? 'secondary' :
-                              lottery.status === 'completed' ? 'outline' : 'destructive'
-                            }>
-                              {lottery.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={lottery.status}
-                              onValueChange={(value: "active" | "cancelled" | "completed" | "upcoming") => handleUpdateLotteryStatus(lottery.id, value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="upcoming">Upcoming</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="tickets" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Tickets</CardTitle>
-                <CardDescription>View all purchased tickets ({tickets.length} total)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Ticket Number</TableHead>
-                        <TableHead>Lottery</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Prize</TableHead>
-                        <TableHead>Draw Date</TableHead>
-                        <TableHead>User</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tickets.length === 0 ? (
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                            No tickets purchased yet
-                          </TableCell>
+                          <TableHead className="text-xs sm:text-sm">Name</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Type</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Draw Date</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Prize</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Actions</TableHead>
                         </TableRow>
-                      ) : (
-                        tickets.map((ticket) => (
-                          <TableRow key={ticket.id}>
-                            <TableCell className="font-mono font-bold text-primary">{ticket.ticket_number}</TableCell>
-                            <TableCell className="font-medium">{ticket.orders?.lottery_name || 'N/A'}</TableCell>
-                            <TableCell className="text-emerald-600 font-semibold">₹{Number(ticket.orders?.ticket_price || 0).toLocaleString()}</TableCell>
-                            <TableCell className="text-amber-600 font-semibold">₹{Number(ticket.orders?.lotteries?.prize || 0).toLocaleString()}</TableCell>
-                            <TableCell className="text-muted-foreground">{new Date(ticket.draw_date).toLocaleDateString()}</TableCell>
-                            <TableCell className="font-mono text-xs text-muted-foreground">{ticket.user_id?.slice(0, 8)}...</TableCell>
+                      </TableHeader>
+                      <TableBody>
+                        {lotteries.map((lottery) => (
+                          <TableRow key={lottery.id}>
+                            <TableCell className="font-medium text-xs sm:text-sm">{lottery.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-[10px] sm:text-xs">{lottery.type}</Badge>
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">{new Date(lottery.draw_date).toLocaleString()}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">₹{lottery.prize?.toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                lottery.status === 'active' ? 'default' :
+                                lottery.status === 'upcoming' ? 'secondary' :
+                                lottery.status === 'completed' ? 'outline' : 'destructive'
+                              } className="text-[10px] sm:text-xs">
+                                {lottery.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={lottery.status}
+                                onValueChange={(value: "active" | "cancelled" | "completed" | "upcoming") => handleUpdateLotteryStatus(lottery.id, value)}
+                              >
+                                <SelectTrigger className="w-24 sm:w-32 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="upcoming" className="text-xs">Upcoming</SelectItem>
+                                  <SelectItem value="active" className="text-xs">Active</SelectItem>
+                                  <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                  <SelectItem value="cancelled" className="text-xs">Cancelled</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="results" className="space-y-6">
+          <TabsContent value="tickets" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Declare Result</CardTitle>
-                <CardDescription>Enter winning ticket numbers</CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">All Tickets</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">View all purchased tickets ({tickets.length} total)</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs sm:text-sm">Ticket Number</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Lottery</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Price</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Prize</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Draw Date</TableHead>
+                          <TableHead className="text-xs sm:text-sm">User</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {tickets.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8 text-xs sm:text-sm">
+                              No tickets purchased yet
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          tickets.map((ticket) => (
+                            <TableRow key={ticket.id}>
+                              <TableCell className="font-mono font-bold text-primary text-xs sm:text-sm">{ticket.ticket_number}</TableCell>
+                              <TableCell className="font-medium text-xs sm:text-sm">{ticket.orders?.lottery_name || 'N/A'}</TableCell>
+                              <TableCell className="text-emerald-600 font-semibold text-xs sm:text-sm">₹{Number(ticket.orders?.ticket_price || 0).toLocaleString()}</TableCell>
+                              <TableCell className="text-amber-600 font-semibold text-xs sm:text-sm">₹{Number(ticket.orders?.lotteries?.prize || 0).toLocaleString()}</TableCell>
+                              <TableCell className="text-muted-foreground text-xs sm:text-sm">{new Date(ticket.draw_date).toLocaleDateString()}</TableCell>
+                              <TableCell className="font-mono text-[10px] sm:text-xs text-muted-foreground">{ticket.user_id?.slice(0, 8)}...</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="results" className="space-y-4 sm:space-y-6">
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Declare Result</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Enter winning ticket numbers</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
                 <div className="space-y-2">
                   <Label htmlFor="result-lottery">Select Lottery</Label>
                   <Select
@@ -694,81 +703,83 @@ const AdminPanel = () => {
                     />
                   </div>
                 </div>
-                <Button onClick={handleDeclareResult} className="w-full">
-                  <Trophy className="mr-2 h-4 w-4" />
+                <Button onClick={handleDeclareResult} className="w-full text-sm sm:text-base">
+                  <Trophy className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Declare Result
                 </Button>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Declared Results</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Declared Results</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Lottery</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>1st Prize</TableHead>
-                        <TableHead>2nd Prize</TableHead>
-                        <TableHead>3rd Prize</TableHead>
-                        <TableHead>Declared</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {results.map((result) => (
-                        <TableRow key={result.id}>
-                          <TableCell className="font-medium">{result.lotteries?.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{result.lotteries?.type}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono font-bold text-green-600">
-                            {result.winning_numbers?.[0] || '-'}
-                          </TableCell>
-                          <TableCell className="font-mono">{result.winning_numbers?.[1] || '-'}</TableCell>
-                          <TableCell className="font-mono">{result.winning_numbers?.[2] || '-'}</TableCell>
-                          <TableCell>{new Date(result.created_at).toLocaleString()}</TableCell>
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs sm:text-sm">Lottery</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Type</TableHead>
+                          <TableHead className="text-xs sm:text-sm">1st Prize</TableHead>
+                          <TableHead className="text-xs sm:text-sm">2nd Prize</TableHead>
+                          <TableHead className="text-xs sm:text-sm">3rd Prize</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Declared</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {results.map((result) => (
+                          <TableRow key={result.id}>
+                            <TableCell className="font-medium text-xs sm:text-sm">{result.lotteries?.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-[10px] sm:text-xs">{result.lotteries?.type}</Badge>
+                            </TableCell>
+                            <TableCell className="font-mono font-bold text-green-600 text-xs sm:text-sm">
+                              {result.winning_numbers?.[0] || '-'}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs sm:text-sm">{result.winning_numbers?.[1] || '-'}</TableCell>
+                            <TableCell className="font-mono text-xs sm:text-sm">{result.winning_numbers?.[2] || '-'}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">{new Date(result.created_at).toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
+          <TabsContent value="settings" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>System Information</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">System Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+              <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+                <div className="flex justify-between items-center p-3 sm:p-4 bg-muted rounded-lg">
                   <div>
-                    <p className="font-medium">Database Status</p>
-                    <p className="text-sm text-muted-foreground">Connected and syncing in real-time</p>
+                    <p className="font-medium text-sm sm:text-base">Database Status</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Connected and syncing in real-time</p>
                   </div>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 shrink-0" />
                 </div>
-                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-center p-3 sm:p-4 bg-muted rounded-lg">
                   <div>
-                    <p className="font-medium">Total Lotteries</p>
-                    <p className="text-sm text-muted-foreground">{lotteries.length} lotteries in system</p>
+                    <p className="font-medium text-sm sm:text-base">Total Lotteries</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{lotteries.length} lotteries in system</p>
                   </div>
-                  <Trophy className="h-5 w-5 text-primary" />
+                  <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
                 </div>
-                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-center p-3 sm:p-4 bg-muted rounded-lg">
                   <div>
-                    <p className="font-medium">Tickets Sold</p>
-                    <p className="text-sm text-muted-foreground">{tickets.length} total tickets</p>
+                    <p className="font-medium text-sm sm:text-base">Tickets Sold</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{tickets.length} total tickets</p>
                   </div>
-                  <Ticket className="h-5 w-5 text-primary" />
+                  <Ticket className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
                 </div>
-                <Button onClick={fetchAllData} className="w-full" variant="outline">
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                <Button onClick={fetchAllData} className="w-full text-sm sm:text-base" variant="outline">
+                  <RefreshCw className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Refresh Data
                 </Button>
               </CardContent>
