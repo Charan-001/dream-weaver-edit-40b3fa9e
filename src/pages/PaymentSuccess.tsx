@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, Download, Home, Ticket } from "lucide-react";
@@ -8,27 +8,37 @@ import { supabase } from "@/integrations/supabase/client";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Get order IDs from navigation state
+  const orderIds = (location.state as { orderIds?: string[] })?.orderIds || [];
+
   useEffect(() => {
-    fetchRecentOrder();
+    fetchCurrentOrder();
   }, []);
 
-  const fetchRecentOrder = async () => {
+  const fetchCurrentOrder = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
       return;
     }
 
-    // Fetch recent booked tickets
+    // If no order IDs passed, redirect to dashboard
+    if (!orderIds || orderIds.length === 0) {
+      navigate("/dashboard");
+      return;
+    }
+
+    // Fetch only tickets from the current transaction's orders
     const { data: tickets, error } = await supabase
       .from('booked_tickets')
       .select('*, orders(lottery_name, ticket_price, transaction_id, purchase_date)')
       .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
+      .in('order_id', orderIds)
+      .order('created_at', { ascending: false });
 
     if (error || !tickets || tickets.length === 0) {
       navigate("/dashboard");

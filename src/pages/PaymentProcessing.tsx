@@ -38,6 +38,8 @@ const PaymentProcessing = () => {
 
     // Create orders and booked tickets
     try {
+      const orderIds: string[] = [];
+      
       for (const cartItem of cartItems) {
         const lottery = cartItem.lotteries;
         if (!lottery) continue;
@@ -65,6 +67,8 @@ const PaymentProcessing = () => {
               throw new Error('Failed to create order');
             }
 
+            orderIds.push(order.id);
+
             // Create booked ticket
             const { error: ticketError } = await supabase
               .from('booked_tickets')
@@ -88,9 +92,12 @@ const PaymentProcessing = () => {
         .delete()
         .eq('user_id', session.user.id);
 
-      // Redirect to success
+      // Redirect to success with order IDs
       setTimeout(() => {
-        navigate("/payment-success", { replace: true });
+        navigate("/payment-success", { 
+          replace: true,
+          state: { orderIds }
+        });
       }, 2000);
 
     } catch (error) {

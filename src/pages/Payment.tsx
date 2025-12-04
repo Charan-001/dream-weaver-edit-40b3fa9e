@@ -238,6 +238,11 @@ const Payment = () => {
                         <option value="kotak">Kotak Mahindra Bank</option>
                       </select>
                     </div>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-sm text-blue-900 dark:text-blue-100">
+                        🏦 After clicking "Pay", you will be securely redirected to your bank's website to complete the payment using your net banking credentials.
+                      </p>
+                    </div>
                   </div>
                 )}
 
