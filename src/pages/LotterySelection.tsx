@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, ShoppingCart, Info, ChevronDown } from "lucide-react";
+import { ArrowLeft, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,8 +12,7 @@ const LotterySelection = () => {
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [numbers, setNumbers] = useState<string[]>([]);
   const [selectedBunch, setSelectedBunch] = useState(5);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [showMoreNumbers, setShowMoreNumbers] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(18);
   const [lottery, setLottery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -72,7 +70,6 @@ const LotterySelection = () => {
     }
     
     setLottery(data);
-    setSelectedDates([data.draw_date]);
     
     // Fetch already booked tickets for this lottery
     const { data: bookedTickets } = await supabase
@@ -99,19 +96,6 @@ const LotterySelection = () => {
     setLoading(false);
   };
 
-  const generateDateOptions = () => {
-    if (!lottery) return [];
-    const dates = [];
-    const startDate = new Date(lottery.draw_date);
-    
-    for (let i = 0; i < 9; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      dates.push(date.toISOString().split('T')[0]);
-    }
-    return dates;
-  };
-
   const toggleNumber = (number: string) => {
     if (selectedNumbers.length >= selectedBunch && !selectedNumbers.includes(number)) {
       toast({
@@ -123,12 +107,6 @@ const LotterySelection = () => {
     }
     setSelectedNumbers((prev) =>
       prev.includes(number) ? prev.filter((n) => n !== number) : [...prev, number]
-    );
-  };
-
-  const toggleDate = (date: string) => {
-    setSelectedDates((prev) =>
-      prev.includes(date) ? prev.filter((d) => d !== date) : [...prev, date]
     );
   };
 
@@ -182,7 +160,7 @@ const LotterySelection = () => {
         user_id: session.user.id,
         lottery_id: lottery.id,
         ticket_numbers: selectedNumbers,
-        draw_dates: selectedDates
+        draw_dates: [lottery.draw_date]
       }]);
 
     if (error) {
@@ -230,7 +208,7 @@ const LotterySelection = () => {
         user_id: session.user.id,
         lottery_id: lottery.id,
         ticket_numbers: selectedNumbers,
-        draw_dates: selectedDates
+        draw_dates: [lottery.draw_date]
       }]);
 
     if (error) {
@@ -245,8 +223,15 @@ const LotterySelection = () => {
     navigate("/cart");
   };
 
-  const displayedNumbers = showMoreNumbers ? numbers : numbers.slice(0, 18);
-  const dateOptions = generateDateOptions();
+  const displayedNumbers = numbers.slice(0, visibleCount);
+
+  const handleShowMore = () => {
+    setVisibleCount(prev => Math.min(prev + 20, numbers.length));
+  };
+
+  const handleShowLess = () => {
+    setVisibleCount(prev => Math.max(prev - 20, 18));
+  };
 
   if (loading || !lottery) {
     return (
@@ -360,36 +345,25 @@ const LotterySelection = () => {
                   );
                 })}
               </div>
-              {!showMoreNumbers && numbers.length > 18 && (
-                <div className="flex justify-center mt-4">
+              <div className="flex justify-center gap-4 mt-4">
+                {visibleCount > 18 && (
                   <Button
                     variant="ghost"
-                    onClick={() => setShowMoreNumbers(true)}
+                    onClick={handleShowLess}
+                    className="gap-2"
+                  >
+                    <ChevronUp className="h-4 w-4" /> Less
+                  </Button>
+                )}
+                {visibleCount < numbers.length && (
+                  <Button
+                    variant="ghost"
+                    onClick={handleShowMore}
                     className="gap-2"
                   >
                     More <ChevronDown className="h-4 w-4" />
                   </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Add Another Draw */}
-            <div>
-              <h2 className="text-xl font-semibold mb-3">Add Another Draw</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {dateOptions.map((date) => {
-                  const isSelected = selectedDates.includes(date);
-                  return (
-                    <Button
-                      key={date}
-                      variant={isSelected ? "default" : "outline"}
-                      onClick={() => toggleDate(date)}
-                      className="rounded-full h-12"
-                    >
-                      {new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                    </Button>
-                  );
-                })}
+                )}
               </div>
             </div>
 
