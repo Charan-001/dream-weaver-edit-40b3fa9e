@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,15 +8,76 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, CreditCard, Wallet, Building2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
+
+interface CartItem {
+  id: string;
+  lottery_id: string;
+  ticket_numbers: string[];
+  draw_dates: string[];
+  lotteries?: {
+    name: string;
+    ticket_price: number;
+    prize: number;
+  };
+}
 
 const Payment = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
-  const subTotal = cartItems.reduce((total: number, item: any) => total + (item.price * item.quantity), 0);
+  useEffect(() => {
+    fetchCartItems();
+  }, []);
+
+  const fetchCartItems = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select('*, lotteries(name, ticket_price, prize)')
+      .eq('user_id', session.user.id);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load cart items",
+        variant: "destructive"
+      });
+      navigate("/cart");
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add items to cart first",
+        variant: "destructive"
+      });
+      navigate("/cart");
+      return;
+    }
+
+    setCartItems(data);
+    setLoading(false);
+  };
+
+  const calculateSubTotal = () => {
+    return cartItems.reduce((total, item) => {
+      const ticketCount = item.ticket_numbers.length * item.draw_dates.length;
+      return total + (ticketCount * (item.lotteries?.ticket_price || 0));
+    }, 0);
+  };
+
+  const subTotal = calculateSubTotal();
   const deliveryCharges = 0;
   const discount = 0;
   const amountPayable = subTotal + deliveryCharges - discount;
@@ -30,6 +91,17 @@ const Payment = () => {
       navigate("/payment-processing");
     }, 1000);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading payment details...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -196,7 +268,7 @@ const Payment = () => {
 
                 <Button
                   type="submit"
-                  disabled={isProcessing}
+                  disabled={isProcessing || cartItems.length === 0}
                   className="w-full bg-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive))]/90 text-white rounded-full py-6 text-lg font-semibold"
                 >
                   {isProcessing ? (
@@ -229,7 +301,9 @@ const Payment = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center pb-4 border-b border-border">
                   <span className="text-muted-foreground">Total Tickets</span>
-                  <span className="font-semibold">{cartItems.length}</span>
+                  <span className="font-semibold">
+                    {cartItems.reduce((sum, item) => sum + item.ticket_numbers.length * item.draw_dates.length, 0)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-4 border-b border-border">
                   <span className="text-muted-foreground">Ticket Price</span>
@@ -253,17 +327,16 @@ const Payment = () => {
               <div className="mt-6 pt-6 border-t border-border">
                 <h3 className="font-semibold mb-3">Your Tickets</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {cartItems.slice(0, 5).map((item: any, index: number) => (
-                    <div key={index} className="text-sm p-2 bg-muted/50 rounded">
-                      <div className="font-medium">{item.ticketNumber}</div>
-                      <div className="text-xs text-muted-foreground">{item.drawDate}</div>
-                    </div>
+                  {cartItems.map((item) => (
+                    item.ticket_numbers.map((ticketNum, idx) => (
+                      <div key={`${item.id}-${idx}`} className="text-sm p-2 bg-muted/50 rounded">
+                        <div className="font-medium">{ticketNum}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.lotteries?.name} - {item.draw_dates.join(', ')}
+                        </div>
+                      </div>
+                    ))
                   ))}
-                  {cartItems.length > 5 && (
-                    <div className="text-sm text-muted-foreground text-center">
-                      +{cartItems.length - 5} more tickets
-                    </div>
-                  )}
                 </div>
               </div>
             </Card>
