@@ -247,6 +247,51 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawals: {
+        Row: {
+          aadhar_number: string | null
+          account_number: string | null
+          amount: number
+          bank_name: string | null
+          created_at: string | null
+          id: string
+          ifsc_code: string | null
+          pan_number: string | null
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          aadhar_number?: string | null
+          account_number?: string | null
+          amount: number
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          ifsc_code?: string | null
+          pan_number?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          aadhar_number?: string | null
+          account_number?: string | null
+          amount?: number
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          ifsc_code?: string | null
+          pan_number?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
