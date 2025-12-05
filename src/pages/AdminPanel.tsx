@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Users, Ticket, TrendingUp, Settings, Trophy, Activity, DollarSign, RefreshCw, CheckCircle } from "lucide-react";
+import { LogOut, Users, Ticket, TrendingUp, Settings, Trophy, Activity, DollarSign, RefreshCw, CheckCircle, Wallet, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,6 +20,7 @@ const AdminPanel = () => {
   const [lotteries, setLotteries] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   
   const [newLottery, setNewLottery] = useState({
@@ -66,10 +67,18 @@ const AdminPanel = () => {
       })
       .subscribe();
 
+    const withdrawalsChannel = supabase
+      .channel('withdrawals-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals' }, () => {
+        fetchWithdrawals();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(lotteriesChannel);
       supabase.removeChannel(ticketsChannel);
       supabase.removeChannel(resultsChannel);
+      supabase.removeChannel(withdrawalsChannel);
     };
   }, [navigate]);
 
@@ -98,7 +107,47 @@ const AdminPanel = () => {
   };
 
   const fetchAllData = async () => {
-    await Promise.all([fetchLotteries(), fetchTickets(), fetchResults(), fetchTotalUsers()]);
+    await Promise.all([fetchLotteries(), fetchTickets(), fetchResults(), fetchTotalUsers(), fetchWithdrawals()]);
+  };
+
+  const fetchWithdrawals = async () => {
+    const { data, error } = await supabase
+      .from('withdrawals')
+      .select('*, profiles(name, email)')
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setWithdrawals(data);
+    }
+  };
+
+  const handleUpdateWithdrawalStatus = async (withdrawalId: string, newStatus: 'approved' | 'rejected') => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const { error } = await supabase
+      .from('withdrawals')
+      .update({ 
+        status: newStatus, 
+        processed_at: new Date().toISOString(),
+        processed_by: session?.user.id
+      })
+      .eq('id', withdrawalId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: `Failed to ${newStatus} withdrawal`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: `Withdrawal ${newStatus} successfully`,
+    });
+    
+    await fetchWithdrawals();
   };
 
   const fetchTotalUsers = async () => {
@@ -282,7 +331,8 @@ const AdminPanel = () => {
     }, 0).toLocaleString()}`,
     activeDraws: lotteries.filter(l => l.status === 'active' || l.status === 'upcoming').length,
     completedDraws: lotteries.filter(l => l.status === 'completed').length,
-    winningTickets: results.reduce((sum, r) => sum + (r.winning_numbers?.length || 0), 0)
+    winningTickets: results.reduce((sum, r) => sum + (r.winning_numbers?.length || 0), 0),
+    pendingWithdrawals: withdrawals.filter(w => w.status === 'pending').length
   };
 
   return (
@@ -302,7 +352,7 @@ const AdminPanel = () => {
 
       <div className="flex-1 container mx-auto px-3 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2 h-auto">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1 sm:gap-2 h-auto">
             <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -317,11 +367,21 @@ const AdminPanel = () => {
               <Ticket className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>Tickets</span>
             </TabsTrigger>
-            <TabsTrigger value="results" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 col-span-2 sm:col-span-1">
+            <TabsTrigger value="results" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>Results</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 col-span-1 sm:col-span-1">
+            <TabsTrigger value="withdrawals" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 relative">
+              <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Withdrawals</span>
+              <span className="sm:hidden">Withdraw</span>
+              {stats.pendingWithdrawals > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                  {stats.pendingWithdrawals}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Settings</span>
               <span className="sm:hidden">More</span>
@@ -743,6 +803,111 @@ const AdminPanel = () => {
                             <TableCell className="text-xs sm:text-sm">{new Date(result.created_at).toLocaleString()}</TableCell>
                           </TableRow>
                         ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="withdrawals" className="space-y-4 sm:space-y-6">
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Withdrawal Requests
+                </CardTitle>
+                <CardDescription>Manage user withdrawal requests</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs sm:text-sm">User</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Amount</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Bank Details</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Requested</TableHead>
+                          <TableHead className="text-xs sm:text-sm">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {withdrawals.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8 text-xs sm:text-sm">
+                              No withdrawal requests yet
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          withdrawals.map((withdrawal) => (
+                            <TableRow key={withdrawal.id}>
+                              <TableCell className="text-xs sm:text-sm">
+                                <div>
+                                  <p className="font-medium">{withdrawal.profiles?.name || 'N/A'}</p>
+                                  <p className="text-muted-foreground text-[10px] sm:text-xs">{withdrawal.profiles?.email || withdrawal.user_id?.slice(0, 8)}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-bold text-xs sm:text-sm">₹{withdrawal.amount?.toLocaleString()}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                <div className="space-y-0.5">
+                                  <p className="font-medium">{withdrawal.bank_name || 'N/A'}</p>
+                                  <p className="text-muted-foreground text-[10px] sm:text-xs">
+                                    A/C: {withdrawal.account_number ? `****${withdrawal.account_number.slice(-4)}` : 'N/A'}
+                                  </p>
+                                  <p className="text-muted-foreground text-[10px] sm:text-xs">
+                                    IFSC: {withdrawal.ifsc_code || 'N/A'}
+                                  </p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={
+                                    withdrawal.status === 'approved' ? 'default' : 
+                                    withdrawal.status === 'rejected' ? 'destructive' : 
+                                    'secondary'
+                                  }
+                                  className="text-[10px] sm:text-xs"
+                                >
+                                  {withdrawal.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                {new Date(withdrawal.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                {withdrawal.status === 'pending' ? (
+                                  <div className="flex gap-1 sm:gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => handleUpdateWithdrawalStatus(withdrawal.id, 'approved')}
+                                      className="h-7 px-2 text-[10px] sm:text-xs"
+                                    >
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleUpdateWithdrawalStatus(withdrawal.id, 'rejected')}
+                                      className="h-7 px-2 text-[10px] sm:text-xs"
+                                    >
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">
+                                    {withdrawal.processed_at ? new Date(withdrawal.processed_at).toLocaleDateString() : '-'}
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
                       </TableBody>
                     </Table>
                   </div>
