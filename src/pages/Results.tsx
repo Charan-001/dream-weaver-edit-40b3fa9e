@@ -7,18 +7,22 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, CalendarIcon, Trophy } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Trophy, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
+import { withdrawalSchema } from "@/lib/validation";
 
 const Results = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [results, setResults] = useState<any[]>([]);
+  const [userTickets, setUserTickets] = useState<string[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [withdrawalData, setWithdrawalData] = useState({
     name: "",
     email: "",
@@ -32,6 +36,7 @@ const Results = () => {
 
   useEffect(() => {
     fetchResults();
+    fetchUserTickets();
     
     const channel = supabase
       .channel('results-updates')
@@ -44,6 +49,28 @@ const Results = () => {
       supabase.removeChannel(channel);
     };
   }, [selectedDate]);
+
+  const fetchUserTickets = async () => {
+    setLoadingTickets(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      setUserTickets([]);
+      setLoadingTickets(false);
+      return;
+    }
+
+    // Fetch user's actual booked tickets from database
+    const { data, error } = await supabase
+      .from('booked_tickets')
+      .select('ticket_number')
+      .eq('user_id', session.user.id);
+
+    if (!error && data) {
+      setUserTickets(data.map(t => t.ticket_number));
+    }
+    setLoadingTickets(false);
+  };
 
   const fetchResults = async () => {
     const startOfDay = new Date(selectedDate);
@@ -72,13 +99,11 @@ const Results = () => {
     }
   };
 
-  const bookedTickets = JSON.parse(localStorage.getItem("bookedTickets") || "[]");
-  
   const checkWinningTickets = () => {
     const winningTickets: string[] = [];
     results.forEach(result => {
       result.winning_numbers?.forEach((number: string) => {
-        if (bookedTickets.includes(number)) {
+        if (userTickets.includes(number)) {
           winningTickets.push(number);
         }
       });
@@ -91,20 +116,22 @@ const Results = () => {
 
   const handleWithdrawal = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
 
-    if (
-      !withdrawalData.name ||
-      !withdrawalData.email ||
-      !withdrawalData.bankName ||
-      !withdrawalData.branch ||
-      !withdrawalData.accountNumber ||
-      !withdrawalData.ifscCode ||
-      !withdrawalData.panCard ||
-      !withdrawalData.aadharCard
-    ) {
+    // Validate with zod schema
+    const result = withdrawalSchema.safeParse(withdrawalData);
+    
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
       toast({
-        title: "Error",
-        description: "Please fill all fields",
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
         variant: "destructive",
       });
       return;
@@ -236,7 +263,12 @@ const Results = () => {
           )}
         </div>
 
-        {hasWon && (
+        {loadingTickets ? (
+          <div className="max-w-4xl mx-auto mt-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mt-2">Checking your tickets...</p>
+          </div>
+        ) : hasWon && (
           <div className="max-w-4xl mx-auto mt-12">
             <Card className="border-2 border-green-500">
               <CardHeader className="bg-gradient-to-r from-green-500/20 to-emerald-500/20">
@@ -265,8 +297,9 @@ const Results = () => {
                           id="name"
                           value={withdrawalData.name}
                           onChange={(e) => setWithdrawalData({ ...withdrawalData, name: e.target.value })}
-                          required
+                          className={validationErrors.name ? "border-destructive" : ""}
                         />
+                        {validationErrors.name && <p className="text-xs text-destructive mt-1">{validationErrors.name}</p>}
                       </div>
                       <div>
                         <Label htmlFor="email">Email</Label>
@@ -275,8 +308,9 @@ const Results = () => {
                           type="email"
                           value={withdrawalData.email}
                           onChange={(e) => setWithdrawalData({ ...withdrawalData, email: e.target.value })}
-                          required
+                          className={validationErrors.email ? "border-destructive" : ""}
                         />
+                        {validationErrors.email && <p className="text-xs text-destructive mt-1">{validationErrors.email}</p>}
                       </div>
                       <div>
                         <Label htmlFor="bankName">Bank Name</Label>
@@ -284,8 +318,9 @@ const Results = () => {
                           id="bankName"
                           value={withdrawalData.bankName}
                           onChange={(e) => setWithdrawalData({ ...withdrawalData, bankName: e.target.value })}
-                          required
+                          className={validationErrors.bankName ? "border-destructive" : ""}
                         />
+                        {validationErrors.bankName && <p className="text-xs text-destructive mt-1">{validationErrors.bankName}</p>}
                       </div>
                       <div>
                         <Label htmlFor="branch">Branch</Label>
@@ -293,8 +328,9 @@ const Results = () => {
                           id="branch"
                           value={withdrawalData.branch}
                           onChange={(e) => setWithdrawalData({ ...withdrawalData, branch: e.target.value })}
-                          required
+                          className={validationErrors.branch ? "border-destructive" : ""}
                         />
+                        {validationErrors.branch && <p className="text-xs text-destructive mt-1">{validationErrors.branch}</p>}
                       </div>
                       <div>
                         <Label htmlFor="accountNumber">Account Number</Label>
@@ -302,35 +338,42 @@ const Results = () => {
                           id="accountNumber"
                           value={withdrawalData.accountNumber}
                           onChange={(e) => setWithdrawalData({ ...withdrawalData, accountNumber: e.target.value })}
-                          required
+                          className={validationErrors.accountNumber ? "border-destructive" : ""}
                         />
+                        {validationErrors.accountNumber && <p className="text-xs text-destructive mt-1">{validationErrors.accountNumber}</p>}
                       </div>
                       <div>
                         <Label htmlFor="ifscCode">IFSC Code</Label>
                         <Input
                           id="ifscCode"
                           value={withdrawalData.ifscCode}
-                          onChange={(e) => setWithdrawalData({ ...withdrawalData, ifscCode: e.target.value })}
-                          required
+                          onChange={(e) => setWithdrawalData({ ...withdrawalData, ifscCode: e.target.value.toUpperCase() })}
+                          className={validationErrors.ifscCode ? "border-destructive" : ""}
+                          placeholder="e.g., SBIN0001234"
                         />
+                        {validationErrors.ifscCode && <p className="text-xs text-destructive mt-1">{validationErrors.ifscCode}</p>}
                       </div>
                       <div>
                         <Label htmlFor="panCard">PAN Card Number</Label>
                         <Input
                           id="panCard"
                           value={withdrawalData.panCard}
-                          onChange={(e) => setWithdrawalData({ ...withdrawalData, panCard: e.target.value })}
-                          required
+                          onChange={(e) => setWithdrawalData({ ...withdrawalData, panCard: e.target.value.toUpperCase() })}
+                          className={validationErrors.panCard ? "border-destructive" : ""}
+                          placeholder="e.g., ABCDE1234F"
                         />
+                        {validationErrors.panCard && <p className="text-xs text-destructive mt-1">{validationErrors.panCard}</p>}
                       </div>
                       <div>
                         <Label htmlFor="aadharCard">Aadhar Card Number</Label>
                         <Input
                           id="aadharCard"
                           value={withdrawalData.aadharCard}
-                          onChange={(e) => setWithdrawalData({ ...withdrawalData, aadharCard: e.target.value })}
-                          required
+                          onChange={(e) => setWithdrawalData({ ...withdrawalData, aadharCard: e.target.value.replace(/\D/g, '').slice(0, 12) })}
+                          className={validationErrors.aadharCard ? "border-destructive" : ""}
+                          placeholder="12 digit number"
                         />
+                        {validationErrors.aadharCard && <p className="text-xs text-destructive mt-1">{validationErrors.aadharCard}</p>}
                       </div>
                     </div>
                     <Button type="submit" className="w-full" size="lg">

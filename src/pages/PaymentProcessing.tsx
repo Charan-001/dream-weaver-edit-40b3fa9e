@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 const PaymentProcessing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [processing, setProcessing] = useState(true);
 
   useEffect(() => {
     processPayment();
@@ -20,87 +21,45 @@ const PaymentProcessing = () => {
       return;
     }
 
-    // Get cart items from database
-    const { data: cartItems, error: cartError } = await supabase
-      .from('cart_items')
-      .select('*, lotteries(*)')
-      .eq('user_id', session.user.id);
-    
-    if (cartError || !cartItems || cartItems.length === 0) {
-      toast({
-        title: "Cart is empty",
-        description: "Please add items to cart",
-        variant: "destructive"
-      });
-      navigate("/cart");
-      return;
-    }
-
-    // Create orders and booked tickets
     try {
-      const orderIds: string[] = [];
-      
-      for (const cartItem of cartItems) {
-        const lottery = cartItem.lotteries;
-        if (!lottery) continue;
-
-        // For each ticket number and draw date combination
-        for (const ticketNumber of cartItem.ticket_numbers) {
-          for (const drawDate of cartItem.draw_dates) {
-            // Create order
-            const transactionId = `TXN${Date.now()}${Math.floor(Math.random() * 10000)}`;
-            const { data: order, error: orderError } = await supabase
-              .from('orders')
-              .insert([{
-                user_id: session.user.id,
-                lottery_id: cartItem.lottery_id,
-                lottery_name: lottery.name,
-                ticket_price: lottery.ticket_price,
-                draw_time: drawDate,
-                transaction_id: transactionId,
-                status: 'confirmed'
-              }])
-              .select()
-              .single();
-
-            if (orderError || !order) {
-              throw new Error('Failed to create order');
-            }
-
-            orderIds.push(order.id);
-
-            // Create booked ticket
-            const { error: ticketError } = await supabase
-              .from('booked_tickets')
-              .insert([{
-                user_id: session.user.id,
-                order_id: order.id,
-                ticket_number: ticketNumber,
-                draw_date: lottery.draw_date
-              }]);
-
-            if (ticketError) {
-              throw new Error('Failed to book ticket');
-            }
-          }
+      // Call the server-side edge function to process payment securely
+      const { data, error } = await supabase.functions.invoke('process-payment', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
+      });
+
+      if (error) {
+        console.error('Payment error:', error);
+        toast({
+          title: "Payment Failed",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+        navigate("/cart");
+        return;
       }
 
-      // Clear cart
-      await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', session.user.id);
+      if (!data?.success) {
+        toast({
+          title: "Payment Failed",
+          description: data?.error || "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+        navigate("/cart");
+        return;
+      }
 
       // Redirect to success with order IDs
       setTimeout(() => {
         navigate("/payment-success", { 
           replace: true,
-          state: { orderIds }
+          state: { orderIds: data.orderIds }
         });
-      }, 2000);
+      }, 1500);
 
     } catch (error) {
+      console.error('Payment processing error:', error);
       toast({
         title: "Payment Failed",
         description: "Something went wrong. Please try again.",

@@ -9,12 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import lotteryLogo from "@/assets/lottery-logo.png";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { loginSchema, registerSchema } from "@/lib/validation";
 
 const Auth = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(window.location.search);
   const mode = searchParams.get('mode');
   const [isLogin, setIsLogin] = useState(mode === 'register' ? false : true);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -27,31 +29,23 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
 
     if (!isLogin) {
-      // Registration validation
-      if (!formData.name || !formData.phone || !formData.email || !formData.password) {
-        toast({
-          title: "Error",
-          description: "Please fill all required fields",
-          variant: "destructive",
+      // Validate registration with zod
+      const result = registerSchema.safeParse(formData);
+      
+      if (!result.success) {
+        const errors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0] as string] = err.message;
+          }
         });
-        return;
-      }
-
-      if (formData.password !== formData.confirmPassword) {
+        setValidationErrors(errors);
         toast({
-          title: "Error",
-          description: "Passwords do not match",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!formData.termsAccepted) {
-        toast({
-          title: "Error",
-          description: "Please accept terms and conditions",
+          title: "Validation Error",
+          description: "Please fix the errors in the form",
           variant: "destructive",
         });
         return;
@@ -62,6 +56,7 @@ const Auth = () => {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             name: formData.name,
             phone: formData.phone,
@@ -91,12 +86,25 @@ const Auth = () => {
         confirmPassword: "",
         termsAccepted: false,
       });
+      setValidationErrors({});
     } else {
-      // Login validation
-      if (!formData.email || !formData.password) {
+      // Validate login with zod
+      const result = loginSchema.safeParse({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      if (!result.success) {
+        const errors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0] as string] = err.message;
+          }
+        });
+        setValidationErrors(errors);
         toast({
-          title: "Error",
-          description: "Please enter email and password",
+          title: "Validation Error",
+          description: "Please enter valid email and password",
           variant: "destructive",
         });
         return;
@@ -162,17 +170,21 @@ const Auth = () => {
                       placeholder="Enter your name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className={validationErrors.name ? "border-destructive" : ""}
                     />
+                    {validationErrors.name && <p className="text-xs text-destructive">{validationErrors.name}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input
                       id="phone"
                       type="tel"
-                      placeholder="Enter your phone number"
+                      placeholder="Enter your 10-digit phone number"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      className={validationErrors.phone ? "border-destructive" : ""}
                     />
+                    {validationErrors.phone && <p className="text-xs text-destructive">{validationErrors.phone}</p>}
                   </div>
                 </>
               )}
@@ -185,7 +197,9 @@ const Auth = () => {
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className={validationErrors.email ? "border-destructive" : ""}
                 />
+                {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
               </div>
 
               <div className="space-y-2">
@@ -193,10 +207,12 @@ const Auth = () => {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder={isLogin ? "Enter your password" : "Min 8 characters"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className={validationErrors.password ? "border-destructive" : ""}
                 />
+                {validationErrors.password && <p className="text-xs text-destructive">{validationErrors.password}</p>}
               </div>
 
               {!isLogin && (
@@ -211,7 +227,9 @@ const Auth = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, confirmPassword: e.target.value })
                       }
+                      className={validationErrors.confirmPassword ? "border-destructive" : ""}
                     />
+                    {validationErrors.confirmPassword && <p className="text-xs text-destructive">{validationErrors.confirmPassword}</p>}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -221,10 +239,11 @@ const Auth = () => {
                         setFormData({ ...formData, termsAccepted: checked as boolean })
                       }
                     />
-                    <Label htmlFor="terms" className="text-sm">
+                    <Label htmlFor="terms" className={`text-sm ${validationErrors.termsAccepted ? "text-destructive" : ""}`}>
                       I accept the terms and conditions
                     </Label>
                   </div>
+                  {validationErrors.termsAccepted && <p className="text-xs text-destructive">{validationErrors.termsAccepted}</p>}
                 </>
               )}
 
@@ -237,7 +256,10 @@ const Auth = () => {
                   {isLogin ? "New user?" : "Existing user?"}
                   <button
                     type="button"
-                    onClick={() => setIsLogin(!isLogin)}
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setValidationErrors({});
+                    }}
                     className="ml-2 text-primary hover:underline font-medium"
                   >
                     {isLogin ? "Register" : "Login"}
