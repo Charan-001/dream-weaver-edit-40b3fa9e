@@ -64,28 +64,44 @@ const Lotteries = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lotteries.map((lottery, index) => (
-              <Card key={lottery.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-105 duration-300">
-                <div className={`bg-gradient-to-br ${getColorForLottery(index)} p-8 text-white relative`}>
-                  <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
-                  <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type} Draw</p>
-                  <p className="text-5xl font-bold mb-2">₹{(lottery.prize / 100000).toFixed(0)}L</p>
-                </div>
-                <CardContent className="p-6">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Draw: {new Date(lottery.draw_date).toLocaleDateString()}
-                  </p>
-                  <p className="text-sm font-medium mb-4">Ticket Price: ₹{lottery.ticket_price}</p>
-                  <Button 
-                    onClick={() => navigate(`/lottery/${lottery.id}`)} 
-                    className="w-full shadow-md hover:shadow-lg transition-shadow" 
-                    size="lg"
-                  >
-                    Buy now
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {lotteries.map((lottery, index) => {
+              const isUpcoming = lottery.status === 'upcoming';
+              return (
+                <Card 
+                  key={lottery.id} 
+                  className={`overflow-hidden transition-all duration-300 ${
+                    isUpcoming 
+                      ? 'opacity-70 grayscale-[30%]' 
+                      : 'hover:shadow-lg hover:scale-105'
+                  }`}
+                >
+                  <div className={`bg-gradient-to-br ${getColorForLottery(index)} p-8 text-white relative`}>
+                    {isUpcoming && (
+                      <span className="absolute top-3 right-3 bg-black/50 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                        Coming Soon
+                      </span>
+                    )}
+                    <h3 className="text-2xl font-bold mb-2">{lottery.name}</h3>
+                    <p className="text-sm opacity-90 mb-4 capitalize">{lottery.type} Draw</p>
+                    <p className="text-5xl font-bold mb-2">₹{(lottery.prize / 100000).toFixed(0)}L</p>
+                  </div>
+                  <CardContent className="p-6">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Draw: {new Date(lottery.draw_date).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm font-medium mb-4">Ticket Price: ₹{lottery.ticket_price}</p>
+                    <Button 
+                      onClick={() => navigate(`/lottery/${lottery.id}`)} 
+                      className="w-full shadow-md hover:shadow-lg transition-shadow" 
+                      size="lg"
+                      disabled={isUpcoming}
+                    >
+                      {isUpcoming ? 'Coming Soon' : 'Buy now'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {lotteries.length === 0 && (
