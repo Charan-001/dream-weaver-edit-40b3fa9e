@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Users, Ticket, TrendingUp, Settings, Trophy, Activity, DollarSign, RefreshCw, CheckCircle, Wallet, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { LogOut, Users, Ticket, TrendingUp, Settings, Trophy, Activity, DollarSign, RefreshCw, CheckCircle, Wallet, XCircle, Eye, CreditCard, Building2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -41,6 +42,9 @@ const AdminPanel = () => {
     second_prize_number: "",
     third_prize_number: ""
   });
+
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<any>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   useEffect(() => {
     checkAdmin();
@@ -852,15 +856,23 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell className="font-bold text-xs sm:text-sm">₹{withdrawal.amount?.toLocaleString()}</TableCell>
                               <TableCell className="text-xs sm:text-sm">
-                                <div className="space-y-0.5">
-                                  <p className="font-medium">{withdrawal.bank_name || 'N/A'}</p>
-                                  <p className="text-muted-foreground text-[10px] sm:text-xs">
-                                    A/C: {withdrawal.account_number ? `****${withdrawal.account_number.slice(-4)}` : 'N/A'}
-                                  </p>
-                                  <p className="text-muted-foreground text-[10px] sm:text-xs">
-                                    IFSC: {withdrawal.ifsc_code || 'N/A'}
-                                  </p>
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-auto p-2 text-left flex items-start gap-2 hover:bg-muted"
+                                  onClick={() => {
+                                    setSelectedWithdrawal(withdrawal);
+                                    setShowDetailsDialog(true);
+                                  }}
+                                >
+                                  <Eye className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                                  <div className="space-y-0.5">
+                                    <p className="font-medium">{withdrawal.bank_name || 'N/A'}</p>
+                                    <p className="text-muted-foreground text-[10px] sm:text-xs">
+                                      Click to view full details
+                                    </p>
+                                  </div>
+                                </Button>
                               </TableCell>
                               <TableCell>
                                 <Badge 
@@ -915,6 +927,119 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Bank Details Dialog */}
+          <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  Withdrawal Details
+                </DialogTitle>
+                <DialogDescription>
+                  Full bank and identity details for this withdrawal request
+                </DialogDescription>
+              </DialogHeader>
+              {selectedWithdrawal && (
+                <div className="space-y-4">
+                  {/* User Info */}
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Requested By</p>
+                    <p className="font-medium">{selectedWithdrawal.profiles?.name || 'N/A'}</p>
+                    <p className="text-sm text-muted-foreground">{selectedWithdrawal.profiles?.email || 'N/A'}</p>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Withdrawal Amount</p>
+                    <p className="text-2xl font-bold text-primary">₹{selectedWithdrawal.amount?.toLocaleString()}</p>
+                  </div>
+
+                  {/* Bank Details */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      Bank Details
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Bank Name</p>
+                        <p className="font-medium">{selectedWithdrawal.bank_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">IFSC Code</p>
+                        <p className="font-mono font-medium">{selectedWithdrawal.ifsc_code || 'N/A'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-xs text-muted-foreground">Account Number</p>
+                        <p className="font-mono font-medium text-lg">{selectedWithdrawal.account_number || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Identity Documents */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Identity Documents
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">PAN Number</p>
+                        <p className="font-mono font-medium">{selectedWithdrawal.pan_number || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Aadhar Number</p>
+                        <p className="font-mono font-medium">{selectedWithdrawal.aadhar_number || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status & Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <Badge 
+                        variant={
+                          selectedWithdrawal.status === 'approved' ? 'default' : 
+                          selectedWithdrawal.status === 'rejected' ? 'destructive' : 
+                          'secondary'
+                        }
+                      >
+                        {selectedWithdrawal.status}
+                      </Badge>
+                    </div>
+                    {selectedWithdrawal.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => {
+                            handleUpdateWithdrawalStatus(selectedWithdrawal.id, 'approved');
+                            setShowDetailsDialog(false);
+                          }}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            handleUpdateWithdrawalStatus(selectedWithdrawal.id, 'rejected');
+                            setShowDetailsDialog(false);
+                          }}
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           <TabsContent value="settings" className="space-y-4 sm:space-y-6">
             <Card>
