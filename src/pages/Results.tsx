@@ -114,7 +114,7 @@ const Results = () => {
   const userWinningTickets = checkWinningTickets();
   const hasWon = userWinningTickets.length > 0;
 
-  const handleWithdrawal = (e: React.FormEvent) => {
+  const handleWithdrawal = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationErrors({});
 
@@ -132,6 +132,52 @@ const Results = () => {
       toast({
         title: "Validation Error",
         description: "Please fix the errors in the form",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get current user
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to submit a withdrawal request",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Calculate prize amount from winning tickets
+    let totalPrize = 0;
+    results.forEach(result => {
+      result.winning_numbers?.forEach((number: string, idx: number) => {
+        if (userWinningTickets.includes(number)) {
+          const prizeMultipliers = [1, 0.5, 0.25];
+          totalPrize += result.prize_amount * (prizeMultipliers[idx] || 0.25);
+        }
+      });
+    });
+
+    // Insert withdrawal request into database
+    const { error } = await supabase
+      .from('withdrawals')
+      .insert({
+        user_id: session.user.id,
+        amount: totalPrize,
+        bank_name: withdrawalData.bankName,
+        account_number: withdrawalData.accountNumber,
+        ifsc_code: withdrawalData.ifscCode,
+        pan_number: withdrawalData.panCard,
+        aadhar_number: withdrawalData.aadharCard,
+        status: 'pending'
+      });
+
+    if (error) {
+      console.error('Error submitting withdrawal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit withdrawal request. Please try again.",
         variant: "destructive",
       });
       return;
