@@ -147,6 +147,77 @@ serve(async (req) => {
 
     console.log('Payment processed successfully. Orders:', orderIds.length);
 
+    // Send WhatsApp notification with ticket details
+    try {
+      // Collect all ticket details for the notification
+      const allTicketNumbers: string[] = [];
+      let totalAmount = 0;
+      let lotteryName = '';
+      let drawDate = '';
+      let transactionId = '';
+      let ticketPrice = 0;
+
+      for (const cartItem of cartItems) {
+        const lottery = cartItem.lotteries;
+        if (lottery) {
+          lotteryName = lottery.name;
+          drawDate = new Date(lottery.draw_date).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          ticketPrice = lottery.ticket_price;
+          
+          for (const ticketNumber of cartItem.ticket_numbers) {
+            allTicketNumbers.push(ticketNumber);
+            totalAmount += lottery.ticket_price * cartItem.draw_dates.length;
+          }
+        }
+      }
+
+      // Get the first transaction ID
+      if (orderIds.length > 0) {
+        const { data: orderData } = await supabaseClient
+          .from('orders')
+          .select('transaction_id')
+          .eq('id', orderIds[0])
+          .single();
+        
+        if (orderData) {
+          transactionId = orderData.transaction_id;
+        }
+      }
+
+      // Call the WhatsApp notification function
+      const whatsappUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-whatsapp`;
+      
+      await fetch(whatsappUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          ticketDetails: {
+            lotteryName,
+            ticketNumbers: allTicketNumbers,
+            drawDate,
+            transactionId,
+            ticketPrice,
+            totalAmount,
+          },
+        }),
+      });
+
+      console.log('WhatsApp notification triggered');
+    } catch (whatsappError) {
+      // Don't fail the payment if WhatsApp fails
+      console.error('WhatsApp notification failed:', whatsappError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
